@@ -1,0 +1,22 @@
+{
+  "name": "http-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "tsx": "^4.22.3"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@types/express": "^5.0.6",
+    "express": "^5.2.1"
+  }
+}
