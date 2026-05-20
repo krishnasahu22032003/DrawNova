@@ -1,0 +1,22 @@
+{
+  "name": "@repo/validators",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+       "build": "tsc -b"
+  },
+    "exports":{
+    "./Zod":"./src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@repo/typescript-config":"workspace:*"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}
