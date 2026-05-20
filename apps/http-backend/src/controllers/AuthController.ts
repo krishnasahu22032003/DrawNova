@@ -129,16 +129,16 @@ export async function UserSignIn(req: Request, res: Response) {
                 ),
             }
         });
-        
-        res.cookie(AUTH_COOKIE_NAME, token , AUTH_COOKIE_OPTIONS)
+
+        res.cookie(AUTH_COOKIE_NAME, token, AUTH_COOKIE_OPTIONS)
         return res.status(200).json({
             success: true,
             message: "User SignIn success",
-             data: {
-        id: CheckUSer.id,
-        username: CheckUSer.username,
-        email: CheckUSer.email,
-      },
+            data: {
+                id: CheckUSer.id,
+                username: CheckUSer.username,
+                email: CheckUSer.email,
+            },
         });
 
     } catch (err) {
@@ -156,69 +156,159 @@ export async function UserSignOut(req: Request, res: Response) {
 
     try {
 
-        const token = req.cookies[AUTH_COOKIE_NAME] ; 
+        const token = req.cookies[AUTH_COOKIE_NAME];
 
-        if(token){
+        if (token) {
             await prisma.session.delete({
-                where:{
+                where: {
                     token
                 }
             });
         };
 
-        res.clearCookie(AUTH_COOKIE_NAME , AUTH_COOKIE_OPTIONS) 
+        res.clearCookie(AUTH_COOKIE_NAME, AUTH_COOKIE_OPTIONS)
 
-      return res.status(200).json({
+        return res.status(200).json({
+            success: true,
+            message: "User signed out",
+        });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+
+export async function getUserDetails(req: Request, res: Response) {
+
+    if (!req.userId) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        })
+    };
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId
+            },
+            select: {
+                id: true,
+                username: true,
+                email: true
+            }
+        });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User does not exist"
+            })
+        };
+        return res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        console.error("GetUserDetails Error:", error)
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        })
+    };
+
+};
+
+export async function updateUserDetails(req: Request, res: Response) {
+
+    const parsedData = SignUpSchema.partial().safeParse(req.body);
+
+    if (!parsedData.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid input",
+            errors: parsedData.error.flatten(),
+        });
+    };
+    const userid = req.userId;
+
+    if (!userid) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized",
+        });
+    } ; 
+
+    const {username , email , password } = parsedData.data ; 
+
+    try{
+
+        const existingUser = await prisma.user.findUnique({
+            where:{
+                id:userid 
+            }
+        });
+
+         if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    } ;
+
+    if(email && email !== existingUser.email){
+        const emailExists =await prisma.user.findUnique({
+            where:{
+                email
+            }
+
+        });
+         if (emailExists) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Email already in use",
+        });
+      }
+    };
+let hashedPassword ; 
+
+if(password){
+   hashedPassword = await bcrypt.hash(password , SALT_ROUNDS)
+}
+   const updateUser = await prisma.user.update({
+    where:{
+        id:userid
+    },
+    data:{
+        ...(username && {username}),
+        ...(email && {email}),
+        ...(hashedPassword && {password:hashedPassword}),
+    },
+    select:{
+          id: true,
+          username: true,
+          email: true,
+          updatedAt: true,
+    }
+   }) ;  
+   return res.status(200).json({
       success: true,
-      message: "User signed out",
+      message:
+        "Profile updated successfully",
+
+      data: updateUser,
     });
-    }catch(error){
-         console.error(error);
+  } catch (error) {
+    console.error(error);
 
     return res.status(500).json({
       success: false,
       message: "Internal server error",
     });
-  }
-    };
-
-
-    export async function getUserDetails(req:Request , res:Response){
-     
-  if (!req.userId) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized"
-    })
   };
-
-    try{
-        const user = await prisma.user.findUnique({
-           where:{
-            id:req.userId
-           },
-           select:{
-            id:true,
-            username:true,
-            email:true
-           }
-        });
-            if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User does not exist"
-      })
-    };
-    return res.status(200).json({
-      success: true,
-      data: user
-    });
-    }catch (error) {
-    console.error("GetUserDetails Error:", error)
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    })
-  } ;
-
     };
