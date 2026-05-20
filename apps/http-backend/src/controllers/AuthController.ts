@@ -4,6 +4,8 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import ENV_SECRETS from "../lib/ENV";
 import jwt from "jsonwebtoken";
+import { AUTH_COOKIE_NAME, AUTH_COOKIE_OPTIONS } from "../config/cookie";
+import { generateToken } from "../lib/jwt";
 
 const SALT_ROUNDS = 12;
 
@@ -93,6 +95,8 @@ export async function UserSignIn(req: Request, res: Response) {
             },
             select: {
                 id: true,
+                email: true,
+                username: true,
                 password: true
             }
         });
@@ -112,23 +116,29 @@ export async function UserSignIn(req: Request, res: Response) {
             });
         };
 
-        if (!ENV_SECRETS.JWT_SECRET) {
-            throw new Error("JWT_SECRET missing");
-        };
 
-        const token = jwt.sign({ userId: CheckUSer.id }, ENV_SECRETS.JWT_SECRET, { expiresIn: "7d" });
+        const token = generateToken(CheckUSer.id);
 
-        res.cookie("user_token", token, {
-            httpOnly: true,
-            secure: ENV_SECRETS.NODE_ENV === 'production',
-            sameSite: ENV_SECRETS.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            path: '/',
+        await prisma.session.create({
+            data: {
+                token,
+                userId: CheckUSer.id,
+                expiresAt: new Date(
+                    Date.now() +
+                    7 * 24 * 60 * 60 * 1000
+                ),
+            }
         });
-
+        
+        res.cookie(AUTH_COOKIE_NAME, token , AUTH_COOKIE_OPTIONS)
         return res.status(200).json({
             success: true,
-            message: "User SignIn success"
+            message: "User SignIn success",
+             data: {
+        id: CheckUSer.id,
+        username: CheckUSer.username,
+        email: CheckUSer.email,
+      },
         });
 
     } catch (err) {
@@ -149,7 +159,7 @@ export function UserSignOut(req: Request, res: Response) {
             httpOnly: true,
             secure: ENV_SECRETS.NODE_ENV === "production",
             sameSite: ENV_SECRETS.NODE_ENV === "production" ? "none" : "lax",
-            path:"/"
+            path: "/"
         });
         return res.status(200).json({
             success: true,
