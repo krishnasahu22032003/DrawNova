@@ -23,7 +23,8 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   session         Session[]
-  rooms           Room[]
+  roomMembers     RoomMembers[]
+  ownedRoom       Room[]
   @@index([username])
 }
 
@@ -54,4 +55,21 @@ updatedAt DateTime      @updatedAt
 members   RoomMembers[]
 
 @@index([ownerId])
+}
+
+model RoomMembers {
+
+ id       String      @id    @default(cuid())
+ roomid   String
+ room     Room        @relation(fields: [roomid] , references: [id] , onDelete: Cascade)
+ userId   String
+ user     User        @relation(fields: [userId] , references: [id] , onDelete: Cascade)
+ joinedAt DateTime    @default(now())
+
+ @@unique([roomid , userId])
+
+ @@index([roomid])
+ @@index([userId])
+
+
 }
