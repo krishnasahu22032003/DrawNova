@@ -40,3 +40,15 @@ export const SignInSchema = z.object({
     )
     .transform((v) => v.trim()),
 });
+
+export const UpdateUserSchema =
+  SignUpSchema.partial().refine(
+    (data) =>
+      data.username ||
+      data.email ||
+      data.password,
+    {
+      message:
+        "At least one field is required",
+    }
+  );

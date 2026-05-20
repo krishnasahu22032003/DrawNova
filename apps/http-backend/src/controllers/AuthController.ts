@@ -1,4 +1,4 @@
-import { SignUpSchema, SignInSchema } from "@repo/validators/Zod";
+import { SignUpSchema, SignInSchema , UpdateUserSchema} from "@repo/validators/Zod";
 import { prisma } from "@repo/db/client";
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
@@ -228,7 +228,8 @@ export async function UpdateUserDetails(
   res: Response
 ) {
   const parsedData =
-    SignUpSchema.safeParse(req.body);
+  
+    UpdateUserSchema.safeParse(req.body);
 
   if (!parsedData.success) {
     return res.status(400).json({
