@@ -102,7 +102,7 @@ export async function UserSignIn(req: Request, res: Response) {
                 message: "Invalid email or password"
             });
         };
-        
+
         const comparePassword = await bcrypt.compare(password, CheckUSer.password);
 
         if (!comparePassword) {
@@ -140,4 +140,26 @@ export async function UserSignIn(req: Request, res: Response) {
 
     };
 
+};
+
+export function UserSignOut(req: Request, res: Response) {
+
+    try {
+        res.clearCookie("user_token", {
+            httpOnly: true,
+            secure: ENV_SECRETS.NODE_ENV === "production",
+            sameSite: ENV_SECRETS.NODE_ENV === "production" ? "none" : "lax",
+            path:"/"
+        });
+        return res.status(200).json({
+            success: true,
+            message: "User signed out"
+        });
+    } catch (error) {
+        console.error("internal server error", error)
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    };
 };
