@@ -110,9 +110,9 @@ export async function UserSignIn(req: Request, res: Response) {
         const comparePassword = await bcrypt.compare(password, CheckUSer.password);
 
         if (!comparePassword) {
-            return res.status(400).json({
+            return res.status(401).json({
                 success: false,
-                message: "Invalid password"
+                message: "Invalid email or password"
             });
         };
 
@@ -159,7 +159,7 @@ export async function UserSignOut(req: Request, res: Response) {
         const token = req.cookies[AUTH_COOKIE_NAME] ; 
 
         if(token){
-            await prisma.session.deleteMany({
+            await prisma.session.delete({
                 where:{
                     token
                 }

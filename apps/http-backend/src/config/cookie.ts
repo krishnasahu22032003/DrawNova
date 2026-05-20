@@ -1,6 +1,8 @@
+import { CookieOptions } from "express";
+
 export const AUTH_COOKIE_NAME = "user_token";
 
-export const AUTH_COOKIE_OPTIONS = {
+export const AUTH_COOKIE_OPTIONS:CookieOptions = {
   httpOnly: true,
 
   secure: process.env.NODE_ENV === "production",
