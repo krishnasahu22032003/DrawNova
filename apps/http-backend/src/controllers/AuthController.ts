@@ -181,3 +181,44 @@ export async function UserSignOut(req: Request, res: Response) {
     });
   }
     };
+
+
+    export async function getUserDetails(req:Request , res:Response){
+     
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    })
+  };
+
+    try{
+        const user = await prisma.user.findUnique({
+           where:{
+            id:req.userId
+           },
+           select:{
+            id:true,
+            username:true,
+            email:true
+           }
+        });
+            if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User does not exist"
+      })
+    };
+    return res.status(200).json({
+      success: true,
+      data: user
+    });
+    }catch (error) {
+    console.error("GetUserDetails Error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    })
+  } ;
+
+    };
