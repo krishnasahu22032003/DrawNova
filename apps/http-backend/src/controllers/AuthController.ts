@@ -152,24 +152,32 @@ export async function UserSignIn(req: Request, res: Response) {
 
 };
 
-export function UserSignOut(req: Request, res: Response) {
+export async function UserSignOut(req: Request, res: Response) {
 
     try {
-        res.clearCookie("user_token", {
-            httpOnly: true,
-            secure: ENV_SECRETS.NODE_ENV === "production",
-            sameSite: ENV_SECRETS.NODE_ENV === "production" ? "none" : "lax",
-            path: "/"
-        });
-        return res.status(200).json({
-            success: true,
-            message: "User signed out"
-        });
-    } catch (error) {
-        console.error("internal server error", error)
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error"
-        });
+
+        const token = req.cookies[AUTH_COOKIE_NAME] ; 
+
+        if(token){
+            await prisma.session.deleteMany({
+                where:{
+                    token
+                }
+            });
+        };
+
+        res.clearCookie(AUTH_COOKIE_NAME , AUTH_COOKIE_OPTIONS) 
+
+      return res.status(200).json({
+      success: true,
+      message: "User signed out",
+    });
+    }catch(error){
+         console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
     };
-};
