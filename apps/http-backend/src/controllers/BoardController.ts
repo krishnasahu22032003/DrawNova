@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/db/client";
 import { UpdateBoardSchema } from "@repo/validators/Zod";
-import { parse } from "dotenv";
 
 export async function GetUserBoard(req: Request, res: Response) {
 
