@@ -53,3 +53,48 @@ export const DiamondElementSchema =
     type: z.literal("diamond"),
   }).strict();
 
+export const TextElementSchema =
+  BaseElementSchema.extend({
+    type: z.literal("text"),
+
+    text: z.string().max(5000),
+
+    fontSize: z.number().min(8).max(300),
+
+    fontFamily: z.string().min(1),
+
+    textAlign: z.enum([
+      "left",
+      "center",
+      "right",
+    ]),
+  }).strict();
+
+const PointsSchema = z.array(
+  z.tuple([
+    z.number().finite(),
+    z.number().finite(),
+  ])
+);
+
+export const LineElementSchema =
+  BaseElementSchema.extend({
+    type: z.literal("line"),
+
+    points: PointsSchema.min(2),
+  }).strict();
+
+export const ArrowElementSchema =
+  BaseElementSchema.extend({
+    type: z.literal("arrow"),
+
+    points: PointsSchema.min(2),
+  }).strict();
+
+export const FreeDrawElementSchema =
+  BaseElementSchema.extend({
+    type: z.literal("freedraw"),
+
+    points: PointsSchema,
+  }).strict();
+
