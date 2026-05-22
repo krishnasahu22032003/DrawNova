@@ -38,3 +38,18 @@ const BaseElementSchema = z.object({
   updatedAt: z.number().int().positive(),
 });
 
+export const RectangleElementSchema =
+  BaseElementSchema.extend({
+    type: z.literal("rectangle"),
+  }).strict();
+
+export const EllipseElementSchema =
+  BaseElementSchema.extend({
+    type: z.literal("ellipse"),
+  }).strict();
+
+export const DiamondElementSchema =
+  BaseElementSchema.extend({
+    type: z.literal("diamond"),
+  }).strict();
+
