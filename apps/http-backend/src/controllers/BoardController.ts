@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/db/client";
+import { UpdateBoardSchema } from "@repo/validators/Zod";
 
 export async function GetUserBoard(req: Request, res: Response) {
 
@@ -44,7 +45,7 @@ export async function GetUserBoard(req: Request, res: Response) {
                 appState: true
                 }
             });
-            
+
             return res.status(201).json({
                 success:true,
                 message:"Board created",
