@@ -46,7 +46,7 @@ model Session {
 model Room {
 
 id        String        @id               @default(cuid())
-name      String        @db.VarChar(50)
+name      String?       @db.VarChar(50)   @default("Room")
 ownerId   String 
 owner     User          @relation("RoomOwner",fields: [ownerId] , references: [id] , onDelete: Cascade)
 maxUsers  Int           @default(3)
@@ -54,7 +54,7 @@ isActive  Boolean       @default(true)
 createdAt DateTime      @default(now())
 updatedAt DateTime      @updatedAt
 members   RoomMembers[]
-
+board     Board?
 @@index([ownerId])
 }
 
@@ -73,16 +73,32 @@ model RoomMembers {
  @@index([roomId])
  @@index([userId])
 
-}
+} 
+ enum BoardType {
+
+PERSONAL
+ROOM
+
+ }
 
 model Board {
 
-  id        String          @id           @default(cuid())
-  userId    String          @unique
-  user      User            @relation(fields: [userId] ,references: [id])
-  elements  Json
+  id        String         @id                         @default(cuid())
+  title     String?        @default("Default-room")
+  type      BoardType
+  //Board for single user 
+  userId    String?        
+  user      User?          @relation(fields: [userId] ,references: [id])
+  isDefault Boolean        @default(false)
+  //Board for multiple user(Collaborative)
+  roomId    String?        @unique
+  room      Room?          @relation(fields: [roomId] , references: [id])
+  elements  Json           @default("[]")
   appState  Json?
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
-  
+
+  @@index([userId])
+  @@unique([userId ,isDefault])
+
 }

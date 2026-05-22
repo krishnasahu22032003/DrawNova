@@ -13,9 +13,11 @@ export async function GetUserBoard(req: Request, res: Response) {
 
     try {
 
-        const userBoard = await prisma.board.findUnique({
+        const userBoard = await prisma.board.findFirst({
             where: {
-                userId: req.userId
+                userId: req.userId,
+                isDefault: true
+                
             },
             select: {
                 id: true,
@@ -92,7 +94,7 @@ export async function UpdateUserBoard(req: Request, res: Response) {
     try {
         const updateBoard = await prisma.board.update({
             where: {
-                userId: req.userId
+                id:board.id
             },
             data: {
                 appState,
@@ -139,7 +141,8 @@ export async function ResetUserBoard(req: Request, res: Response) {
     try {
         const resetBoard = await prisma.board.update({
             where: {
-                userId: req.userId
+                userId: req.userId,
+                isDefault:true
             },
             data: {
                 elements: [],

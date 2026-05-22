@@ -128,7 +128,8 @@ export async function UserSignIn(req: Request, res: Response) {
             }
         });
 
-        res.cookie(AUTH_COOKIE_NAME, token, AUTH_COOKIE_OPTIONS)
+        res.cookie(AUTH_COOKIE_NAME, token, AUTH_COOKIE_OPTIONS) ; 
+
         return res.status(200).json({
             success: true,
             message: "User SignIn success",
