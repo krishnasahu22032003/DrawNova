@@ -16,15 +16,16 @@ datasource db {
 
 model User {
    
-  id              String   @id              @default(cuid())
-  username        String   @db.VarChar(50)
-  email           String   @unique          @db.VarChar(255)
-  password        String   @db.VarChar(255) 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id              String         @id              @default(cuid())
+  username        String         @db.VarChar(50)
+  email           String         @unique          @db.VarChar(255)
+  password        String         @db.VarChar(255) 
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   session         Session[]
-  roomMembers     RoomMembers[]
-  ownedRoom       Room[]
+  roomMembers     RoomMembers[]  
+  ownedRoom       Room[]         @relation("RoomOwner")
+  board           Board[]
   @@index([username])
 }
 
@@ -47,7 +48,7 @@ model Room {
 id        String        @id               @default(cuid())
 name      String        @db.VarChar(50)
 ownerId   String 
-owner     User          @relation(fields: [ownerId] , references: [id] , onDelete: Cascade)
+owner     User          @relation("RoomOwner",fields: [ownerId] , references: [id] , onDelete: Cascade)
 maxUsers  Int           @default(3)
 isActive  Boolean       @default(true)
 createdAt DateTime      @default(now())
@@ -60,16 +61,28 @@ members   RoomMembers[]
 model RoomMembers {
 
  id       String      @id    @default(cuid())
- roomid   String
- room     Room        @relation(fields: [roomid] , references: [id] , onDelete: Cascade)
+ roomId   String
+ room     Room        @relation(fields: [roomId] , references: [id] , onDelete: Cascade)
  userId   String
  user     User        @relation(fields: [userId] , references: [id] , onDelete: Cascade)
  joinedAt DateTime    @default(now())
+  
+ //Same user does not enter the same room twice   
+ @@unique([roomId , userId])
 
- @@unique([roomid , userId])
-
- @@index([roomid])
+ @@index([roomId])
  @@index([userId])
 
+}
 
+model Board {
+
+  id        String          @id           @default(cuid())
+  userId    String          @unique
+  user      User            @relation(fields: [userId] ,references: [id])
+  elements  Json
+  appState  Json?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  
 }
