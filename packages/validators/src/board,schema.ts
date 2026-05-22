@@ -98,3 +98,58 @@ export const FreeDrawElementSchema =
     points: PointsSchema,
   }).strict();
 
+export const ElementSchema = z.discriminatedUnion(
+  "type",
+  [
+    RectangleElementSchema,
+    EllipseElementSchema,
+    DiamondElementSchema,
+    TextElementSchema,
+    LineElementSchema,
+    ArrowElementSchema,
+    FreeDrawElementSchema,
+  ]
+);
+
+export const AppStateSchema = z.object({
+  zoom: z.number().min(0.1).max(10),
+
+  scrollX: z.number().finite(),
+
+  scrollY: z.number().finite(),
+
+  theme: z.enum(["light", "dark"]),
+
+  gridSize: z.number().min(1).max(200),
+
+  viewBackgroundColor: z.string(),
+
+  currentTool: z.enum([
+    "selection",
+    "rectangle",
+    "ellipse",
+    "diamond",
+    "line",
+    "arrow",
+    "text",
+    "freedraw",
+  ]),
+}).strict();
+
+export const UpdateBoardSchema = z.object({
+  elements: z.array(ElementSchema),
+
+  appState: AppStateSchema,
+}).strict();
+
+export type Element = z.infer<
+  typeof ElementSchema
+>;
+
+export type AppState = z.infer<
+  typeof AppStateSchema
+>;
+
+export type UpdateBoardInput = z.infer<
+  typeof UpdateBoardSchema
+>;
