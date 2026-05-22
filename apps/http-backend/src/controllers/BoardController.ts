@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/db/client";
 import { UpdateBoardSchema } from "@repo/validators/Zod";
+import { parse } from "dotenv";
 
 export async function GetUserBoard(req: Request, res: Response) {
 
@@ -37,19 +38,19 @@ export async function GetUserBoard(req: Request, res: Response) {
                         scrollY: 0,
                     }
                 },
-                select:{
-                      id: true,
-                elements: true,
-                createdAt: true,
-                updatedAt: true,
-                appState: true
+                select: {
+                    id: true,
+                    elements: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    appState: true
                 }
             });
 
             return res.status(201).json({
-                success:true,
-                message:"Board created",
-                data:newBoard
+                success: true,
+                message: "Board created",
+                data: newBoard
             });
         };
 
@@ -68,4 +69,61 @@ export async function GetUserBoard(req: Request, res: Response) {
 
 };
 
+export async function UpdateUserBoard(req: Request, res: Response) {
 
+    if (!req.userId) {
+        return res.status(401).json({
+            success: false,
+            message: "User not found"
+        });
+    };
+
+    const parsedData = UpdateBoardSchema.safeParse(req.body);
+
+    if (!parsedData.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid input",
+            error: parsedData.error.flatten()
+        });
+    };
+
+    const { appState, elements } = parsedData.data;
+
+    try {
+        const updateBoard = await prisma.board.update({
+            where: {
+                userId: req.userId
+            },
+            data: {
+                appState,
+                elements
+            },
+            select: {
+                id: true,
+                appState: true,
+                elements: true,
+                updatedAt: true
+            }
+        });
+        if (!updateBoard) {
+            return res.status(400).json({
+                success: false,
+                message: "Board not updated"
+            });
+        };
+
+        return res.status(200).json({
+            success: true,
+            message: "Board updated successfully",
+            data: updateBoard
+        });
+    } catch (err) {
+        console.error(err)
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    };
+
+};
