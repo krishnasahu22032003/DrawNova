@@ -127,3 +127,47 @@ export async function UpdateUserBoard(req: Request, res: Response) {
     };
 
 };
+
+export async function ResetUserBoard(req: Request, res: Response) {
+
+    if (!req.userId) {
+        return res.status(401).json({
+            success: false,
+            message: "User not found"
+        });
+    };
+
+    try {
+        const resetBoard = await prisma.board.update({
+            where: {
+                userId: req.userId
+            },
+            data: {
+                elements: [],
+                appState: {
+                    zoom: 1,
+                    scrollX: 0,
+                    scrollY: 0
+                }
+            },
+            select:{
+                id:true ,
+                elements:true,
+                appState:true,
+                updatedAt:true
+            }
+        });
+        return res.status(200).json({
+            success: true,
+            message: "User board reset",
+            data: resetBoard
+        });
+    } catch (err) {
+        console.error(err)
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    };
+};
+
