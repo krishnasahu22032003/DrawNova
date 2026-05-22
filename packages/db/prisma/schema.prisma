@@ -88,16 +88,17 @@ model Board {
   type      BoardType
   //Board for single user 
   userId    String?        
-  user      User?          @relation(fields: [userId] ,references: [id])
+  user      User?          @relation(fields: [userId] ,references: [id] , onDelete: Cascade)
   isDefault Boolean        @default(false)
   //Board for multiple user(Collaborative)
   roomId    String?        @unique
-  room      Room?          @relation(fields: [roomId] , references: [id])
+  room      Room?          @relation(fields: [roomId] , references: [id] , onDelete: Cascade)
   elements  Json           @default("[]")
   appState  Json?
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
   @@index([userId])
-  
+  @@unique([userId ,isDefault])
+
 }
