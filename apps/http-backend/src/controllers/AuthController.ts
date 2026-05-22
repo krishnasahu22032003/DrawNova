@@ -2,8 +2,6 @@ import { SignUpSchema, SignInSchema , UpdateUserSchema} from "@repo/validators/Z
 import { prisma } from "@repo/db/client";
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import ENV_SECRETS from "../lib/ENV";
-import jwt from "jsonwebtoken";
 import { AUTH_COOKIE_NAME, AUTH_COOKIE_OPTIONS } from "../config/cookie";
 import { generateToken } from "../lib/jwt";
 
@@ -89,7 +87,7 @@ export async function UserSignIn(req: Request, res: Response) {
     const { email, password } = parsedData.data;
 
     try {
-        const CheckUSer = await prisma.user.findUnique({
+        const checkUSer = await prisma.user.findUnique({
             where: {
                 email: email
             },
@@ -100,14 +98,14 @@ export async function UserSignIn(req: Request, res: Response) {
                 password: true
             }
         });
-        if (!CheckUSer || !CheckUSer.password) {
+        if (!checkUSer || !checkUSer.password) {
             return res.status(401).json({
                 success: false,
                 message: "Invalid email or password"
             });
         };
 
-        const comparePassword = await bcrypt.compare(password, CheckUSer.password);
+        const comparePassword = await bcrypt.compare(password, checkUSer.password);
 
         if (!comparePassword) {
             return res.status(401).json({
@@ -117,12 +115,12 @@ export async function UserSignIn(req: Request, res: Response) {
         };
 
 
-        const token = generateToken(CheckUSer.id);
+        const token = generateToken(checkUSer.id);
 
         await prisma.session.create({
             data: {
                 token,
-                userId: CheckUSer.id,
+                userId: checkUSer.id,
                 expiresAt: new Date(
                     Date.now() +
                     7 * 24 * 60 * 60 * 1000
@@ -135,9 +133,9 @@ export async function UserSignIn(req: Request, res: Response) {
             success: true,
             message: "User SignIn success",
             data: {
-                id: CheckUSer.id,
-                username: CheckUSer.username,
-                email: CheckUSer.email,
+                id: checkUSer.id,
+                username: checkUSer.username,
+                email: checkUSer.email,
             },
         });
 
