@@ -25,7 +25,7 @@ model User {
   session         Session[]
   roomMembers     RoomMembers[]  
   ownedRoom       Room[]         @relation("RoomOwner")
-  board           Board[]
+  boards           Board[]
   @@index([username])
 }
 
@@ -46,7 +46,7 @@ model Session {
 model Room {
 
 id        String        @id               @default(cuid())
-name      String?       @db.VarChar(50)   @default("Room")
+name      String        @db.VarChar(50)   @default("Room")
 ownerId   String 
 owner     User          @relation("RoomOwner",fields: [ownerId] , references: [id] , onDelete: Cascade)
 maxUsers  Int           @default(3)
@@ -84,7 +84,7 @@ ROOM
 model Board {
 
   id        String         @id                         @default(cuid())
-  title     String?        @default("Default-room")
+  title     String        @default("Default-room")
   type      BoardType
   //Board for single user 
   userId    String?        
@@ -99,6 +99,5 @@ model Board {
   updatedAt DateTime       @updatedAt
 
   @@index([userId])
-  @@unique([userId ,isDefault])
-
+  
 }

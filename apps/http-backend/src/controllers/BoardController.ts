@@ -2,174 +2,205 @@ import { Request, Response } from "express";
 import { prisma } from "@repo/db/client";
 import { UpdateBoardSchema } from "@repo/validators/Zod";
 
-export async function GetUserBoard(req: Request, res: Response) {
+export async function GetUserBoard(
+  req: Request,
+  res: Response
+) {
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
 
-    if (!req.userId) {
-        return res.status(401).json({
-            success: false,
-            message: "Invalid User"
-        });
-    };
+  try {
+    let userBoard =
+      await prisma.board.findUnique({
+        where: {
+          userId_isDefault: {
+            userId: req.userId,
+            isDefault: true,
+          },
+        },
 
-    try {
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          elements: true,
+          appState: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
 
-        const userBoard = await prisma.board.findFirst({
-            where: {
-                userId: req.userId,
-                isDefault: true
-                
+    if (!userBoard) {
+      userBoard =
+        await prisma.board.create({
+          data: {
+            title: "My Board",
+
+            type: "PERSONAL",
+
+            userId: req.userId,
+
+            isDefault: true,
+
+            elements: [],
+
+            appState: {
+              zoom: 1,
+              scrollX: 0,
+              scrollY: 0,
+              theme: "dark",
             },
-            select: {
-                id: true,
-                elements: true,
-                createdAt: true,
-                updatedAt: true,
-                appState: true
-            }
+          },
+
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            elements: true,
+            appState: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         });
+    }
 
-        if (!userBoard) {
-            const newBoard = await prisma.board.create({
-                data: {
-                    userId: req.userId,
-                    elements: [],
-                    appState: {
-                        zoom: 1,
-                        scrollX: 0,
-                        scrollY: 0,
-                    }
-                },
-                select: {
-                    id: true,
-                    elements: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    appState: true
-                }
-            });
+    return res.status(200).json({
+      success: true,
+      message: "Board fetched successfully",
+      data: userBoard,
+    });
+  } catch (err) {
+    console.error(err);
 
-            return res.status(201).json({
-                success: true,
-                message: "Board created",
-                data: newBoard
-            });
-        };
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
 
-        return res.status(200).json({
-            success: true,
-            message: "User board found ",
-            data: userBoard
-        })
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({
-            success: false,
-            message: "internal server error"
-        });
-    };
+export async function UpdateUserBoard(
+  req: Request,
+  res: Response
+) {
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
 
+  const parsedData =
+    UpdateBoardSchema.safeParse(req.body);
+
+  if (!parsedData.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid board data",
+      error: parsedData.error.flatten(),
+    });
+  }
+
+  const { elements, appState } =
+    parsedData.data;
+
+  try {
+    const updatedBoard =
+      await prisma.board.update({
+        where: {
+          userId_isDefault: {
+            userId: req.userId,
+            isDefault: true,
+          },
+        },
+
+        data: {
+          elements,
+          appState,
+        },
+
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          elements: true,
+          appState: true,
+          updatedAt: true,
+        },
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Board updated successfully",
+      data: updatedBoard,
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function ResetUserBoard(
+  req: Request,
+  res: Response
+) {
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  try {
+    const resetBoard =
+      await prisma.board.update({
+        where: {
+          userId_isDefault: {
+            userId: req.userId,
+            isDefault: true,
+          },
+        },
+
+        data: {
+          elements: [],
+
+          appState: {
+            zoom: 1,
+            scrollX: 0,
+            scrollY: 0,
+            theme: "dark",
+          },
+        },
+
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          elements: true,
+          appState: true,
+          updatedAt: true,
+        },
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Board reset successfully",
+      data: resetBoard,
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
 };
-
-export async function UpdateUserBoard(req: Request, res: Response) {
-
-    if (!req.userId) {
-        return res.status(401).json({
-            success: false,
-            message: "User not found"
-        });
-    };
-
-    const parsedData = UpdateBoardSchema.safeParse(req.body);
-
-    if (!parsedData.success) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid input",
-            error: parsedData.error.flatten()
-        });
-    };
-
-    const { appState, elements } = parsedData.data;
-
-    try {
-        const updateBoard = await prisma.board.update({
-            where: {
-                id:board.id
-            },
-            data: {
-                appState,
-                elements
-            },
-            select: {
-                id: true,
-                appState: true,
-                elements: true,
-                updatedAt: true
-            }
-        });
-        if (!updateBoard) {
-            return res.status(400).json({
-                success: false,
-                message: "Board not updated"
-            });
-        };
-
-        return res.status(200).json({
-            success: true,
-            message: "Board updated successfully",
-            data: updateBoard
-        });
-    } catch (err) {
-        console.error(err)
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error"
-        });
-    };
-
-};
-
-export async function ResetUserBoard(req: Request, res: Response) {
-
-    if (!req.userId) {
-        return res.status(401).json({
-            success: false,
-            message: "User not found"
-        });
-    };
-
-    try {
-        const resetBoard = await prisma.board.update({
-            where: {
-                userId: req.userId,
-                isDefault:true
-            },
-            data: {
-                elements: [],
-                appState: {
-                    zoom: 1,
-                    scrollX: 0,
-                    scrollY: 0
-                }
-            },
-            select:{
-                id:true ,
-                elements:true,
-                appState:true,
-                updatedAt:true
-            }
-        });
-        return res.status(200).json({
-            success: true,
-            message: "User board reset",
-            data: resetBoard
-        });
-    } catch (err) {
-        console.error(err)
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error"
-        });
-    };
-};
-
