@@ -18,6 +18,10 @@ export const CreateRoomSchema = z.object({
     .default(3),
 }).strict();
 
+export const roomSchema = z.object({
+  roomId: z.cuid()
+});
+
 export type CreateRoomInput = z.infer<
   typeof CreateRoomSchema
 >;

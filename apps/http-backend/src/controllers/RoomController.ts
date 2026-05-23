@@ -1,5 +1,5 @@
 import { prisma } from "@repo/db/client";
-import { CreateRoomSchema } from "@repo/validators/Zod";
+import { CreateRoomSchema, roomSchema } from "@repo/validators/Zod";
 import { Request, Response } from "express";
 
 
