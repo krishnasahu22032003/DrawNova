@@ -292,4 +292,101 @@ export async function getRoom(req: Request, res: Response) {
       message: "Internal server error"
     });
   }
-}
+};
+
+export async function joinRoom(req: Request, res: Response) {
+
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const userId = req.userId;
+
+  const parsed = roomSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid input",
+      error: parsed.error.flatten()
+    });
+  }
+
+  const { roomId } = parsed.data;
+
+  try {
+
+    const room = await prisma.room.findUnique({
+      where: {
+        id: roomId
+      }
+    });
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found"
+      });
+    }
+
+    if (!room.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: "Room is inactive"
+      });
+    }
+
+    const existingMember = await prisma.roomMembers.findUnique({
+      where: {
+        roomId_userId: {
+          roomId,
+          userId
+        }
+      }
+    });
+
+    if (existingMember) {
+      return res.status(400).json({
+        success: false,
+        message: "Already joined this room"
+      });
+    }
+
+    const membersCount = await prisma.roomMembers.count({
+      where: {
+        roomId
+      }
+    });
+
+    if (membersCount >= room.maxUsers) {
+      return res.status(400).json({
+        success: false,
+        message: "Room is full"
+      });
+    }
+
+    await prisma.roomMembers.create({
+      data: {
+        roomId,
+        userId
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Joined room successfully"
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
