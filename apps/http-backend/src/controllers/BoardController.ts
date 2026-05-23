@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/db/client";
-import { UpdateBoardSchema } from "@repo/validators/Zod";
+import { roomSchema, UpdateBoardSchema } from "@repo/validators/Zod";
 
 export async function GetUserBoard(
   req: Request,
@@ -204,3 +204,89 @@ export async function ResetUserBoard(
     });
   }
 };
+
+export async function getBoardById(req: Request,res: Response) {
+
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const userId = req.userId;
+
+  const parsed = roomSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid board id",
+      error: parsed.error.flatten()
+    });
+  }
+
+  const { roomId: boardId } = parsed.data;
+
+  try {
+
+    const board = await prisma.board.findFirst({
+      where: {
+
+        id: boardId,
+
+        OR: [
+          {
+            userId
+          },
+
+          {
+            room: {
+              members: {
+                some: {
+                  userId
+                }
+              }
+            }
+          }
+        ]
+      },
+
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        elements: true,
+        appState: true,
+        createdAt: true,
+        updatedAt: true,
+
+        roomId: true,
+        userId: true
+      }
+    });
+
+    if (!board) {
+      return res.status(404).json({
+        success: false,
+        message: "Board not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Board fetched successfully",
+      data: board
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+}
+
