@@ -390,3 +390,76 @@ export async function joinRoom(req: Request, res: Response) {
     });
   }
 };
+
+export async function getUserRooms(req: Request, res: Response) {
+
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const userId = req.userId;
+
+  try {
+
+    const rooms = await prisma.room.findMany({
+      where: {
+        OR: [
+          {
+            ownerId: userId
+          },
+          {
+            members: {
+              some: {
+                userId
+              }
+            }
+          }
+        ],
+
+        isActive: true
+      },
+
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        maxUsers: true,
+
+        owner: {
+          select: {
+            id: true,
+            username: true,
+          }
+        },
+
+        _count: {
+          select: {
+            members: true
+          }
+        }
+      },
+
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Rooms fetched successfully",
+      data: rooms
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+}
