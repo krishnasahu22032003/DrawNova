@@ -94,4 +94,30 @@ broadcast(roomId:string , message:unknown , excludeSocket?:Websocket){
     };
 };
 
+removeSocker(ws:Websocket){
+
+    const joinedRooms = this.socketRoom.get(ws) ; 
+
+    if(!joinedRooms) return ;
+     
+    for(const roomId of joinedRooms){
+
+        const room = this.rooms.get(roomId) ;
+
+        if(room) {
+            room.delete(ws);
+
+
+      if (room.size === 0) {
+        this.rooms.delete(roomId);
+      }
+        }
+    }
+      this.socketRoom.delete(ws);
+
+  console.log("Socket disconnected and cleaned");
+
+};
+
+
 }
