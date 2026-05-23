@@ -72,5 +72,26 @@ leaveRoom(roomId : string , ws : Websocket){
      console.log(`Socket left room ${roomId}`);
 };
 
+broadcast(roomId:string , message:unknown , excludeSocket?:Websocket){
+
+    const room = this.rooms.get(roomId) ;
+
+    if(!room) return ;
+
+    for(const client of room ){
+
+        if(client === excludeSocket){
+            continue ;
+        };
+
+        if(client.readyState === Websocket.OPEN){
+            try{
+                client.send(JSON.stringify(message)) ; 
+            }catch(err){
+                console.error(err)
+            };
+        }
+    };
+};
 
 }
