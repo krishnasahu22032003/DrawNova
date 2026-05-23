@@ -84,3 +84,65 @@ export async function CreateRoom(req: Request, res: Response) {
   };
 
 };
+
+export async function DeleteRoom(req: Request, res: Response) {
+
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid User"
+    });
+  };
+
+  const userId = req.userId;
+
+  const parsed = roomSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid Input",
+      error: parsed.error.flatten()
+    });
+  };
+
+  const { roomId } = parsed.data;
+
+  try {
+    const room = await prisma.room.findFirst({
+      where: {
+        id: roomId
+      }
+    });
+    if (!room) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid roomId"
+      });
+    };
+
+    if (room.ownerId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    };
+
+    await prisma.room.delete({
+      where: {
+        id: roomId,
+      }
+    });
+
+    return res.status(200).json({
+      message: "Room deleted successfully"
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
