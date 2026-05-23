@@ -44,4 +44,33 @@ joinRoom (roomId : string , ws:Websocket ){
     console.log(`Socket joined the room ${roomId}`) ; 
 };
 
+// User leaving room logic 
+
+leaveRoom(roomId : string , ws : Websocket){
+ 
+    const room = this.rooms.get(roomId) ;
+
+    if(room){
+        room.delete(ws);
+    };
+
+    if(room?.size === 0){
+        this.rooms.delete(roomId);
+    };
+
+     const joinedRoom = this.socketRoom.get(ws) ; 
+
+     if(joinedRoom){
+
+        joinedRoom.delete(roomId); 
+
+        if(joinedRoom.size === 0){
+            this.socketRoom.delete(ws) ;
+        };
+     };
+    
+     console.log(`Socket left room ${roomId}`);
+};
+
+
 }
