@@ -146,3 +146,63 @@ export async function DeleteRoom(req: Request, res: Response) {
     });
   }
 };
+
+export async function LeaveRoom(req: Request, res: Response) {
+
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid User"
+    });
+  };
+
+  const userId = req.userId;
+
+  const parsed = roomSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid Input",
+      error: parsed.error.flatten()
+    });
+  };
+
+  const { roomId } = parsed.data;
+  try {
+    const member = await prisma.roomMembers.findUnique({
+      where: {
+        roomId_userId: {
+          roomId,
+          userId
+        }
+      }
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: "You are not a member of this room"
+      });
+    };
+
+    await prisma.roomMembers.delete({
+      where: {
+        roomId_userId: {
+          roomId,
+          userId
+        }
+      }
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Left room successfully"
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  };
+};
