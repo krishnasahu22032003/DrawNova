@@ -4,6 +4,7 @@ import UserRouter from "./routes/UserRoutes";
 import BoardRouter from "./routes/BoardRoutes";
 import cookieParser from "cookie-parser";
 import compression from "compression";
+import RoomRouter from "./routes/RoomRoutes";
 
 const app = express() ; 
 
@@ -12,6 +13,7 @@ app.use(cookieParser()) ;
 app.use(compression()) ; 
 
 app.use("api/v1/user" , UserRouter) ;
-app.use("api/v1/board" , BoardRouter) ;
+app.use("api/v1/board" , BoardRouter) ; 
+app.use("api/v1/room" , RoomRouter) ; 
 
 StartServer(app);

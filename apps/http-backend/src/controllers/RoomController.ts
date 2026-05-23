@@ -462,4 +462,5 @@ export async function getUserRooms(req: Request, res: Response) {
       message: "Internal server error"
     });
   }
-}
+};
+
