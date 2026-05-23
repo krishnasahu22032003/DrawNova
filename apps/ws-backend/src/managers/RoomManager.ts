@@ -94,7 +94,7 @@ broadcast(roomId:string , message:unknown , excludeSocket?:Websocket){
     };
 };
 
-removeSocker(ws:Websocket){
+removeSocket(ws:Websocket){
 
     const joinedRooms = this.socketRoom.get(ws) ; 
 
