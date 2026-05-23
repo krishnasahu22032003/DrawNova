@@ -205,7 +205,7 @@ export async function ResetUserBoard(
   }
 };
 
-export async function getBoardById(req: Request,res: Response) {
+export async function getBoardById(req: Request, res: Response) {
 
   if (!req.userId) {
     return res.status(401).json({
@@ -290,7 +290,7 @@ export async function getBoardById(req: Request,res: Response) {
   }
 }
 
-export async function updateBoardById( req: Request,res: Response) {
+export async function updateBoardById(req: Request, res: Response) {
 
   if (!req.userId) {
     return res.status(401).json({
