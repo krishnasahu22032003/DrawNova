@@ -53,6 +53,8 @@ wss.on("connection", (ws: WebSocket) => {
                     handleClearBoard(ws, data.payLoad);
                     break;
 
+                default: console.log("Unknown message type");
+
             };
 
         } catch (err) {
@@ -62,7 +64,7 @@ wss.on("connection", (ws: WebSocket) => {
     });
 
     ws.on("close", () => {
-         removeSocket(ws)
+        removeSocket(ws)
         console.log("Client Disconnected");
     });
 });
