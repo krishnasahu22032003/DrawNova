@@ -71,6 +71,8 @@ leaveRoom(roomId : string , ws : Websocket){
     
      console.log(`Socket left room ${roomId}`);
 };
+ 
+// BroadCast message to everyone in the room 
 
 broadcast(roomId:string , message:unknown , excludeSocket?:Websocket){
 
