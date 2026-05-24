@@ -12,3 +12,12 @@ export function handleDrawShape(ws : WebSocket , payLoad : DrawShapePayload){
     }, ws) ; 
 
 } ; 
+
+export function updateDrawShape(ws :WebSocket , payLoad : UpdateShapePayload){
+
+roomManager.broadcast(payLoad.roomId , {
+    type:"UPDATE_SHAPE",
+    payLoad
+},ws) ;
+
+};
