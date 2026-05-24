@@ -38,4 +38,4 @@ export function handleClearBoard(
         type: "CLEAR_BOARD",
         payload
     }, ws);
-}
+};
