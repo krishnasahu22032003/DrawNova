@@ -13,11 +13,19 @@ export function handleDrawShape(ws : WebSocket , payLoad : DrawShapePayload){
 
 } ; 
 
-export function updateDrawShape(ws :WebSocket , payLoad : UpdateShapePayload){
+export function handleUpdateShape(ws :WebSocket , payLoad : UpdateShapePayload){
 
 roomManager.broadcast(payLoad.roomId , {
     type:"UPDATE_SHAPE",
     payLoad
 },ws) ;
 
+};
+
+export function handleDeleteShape(ws:WebSocket  , payLoad : DeleteShapePayload){
+
+roomManager.broadcast(payLoad.roomId , {
+    type:"DELETE_SHAPE",
+    payLoad
+},ws); 
 };
