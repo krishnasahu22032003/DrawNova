@@ -1,4 +1,4 @@
-export interface JoinRoomPayload {
+export interface LeaveRoomPayload {
   roomId: string;
 };
 
