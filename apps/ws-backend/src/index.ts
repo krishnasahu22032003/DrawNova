@@ -1,12 +1,14 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { createServer } from "http";
-import { RoomManager } from "./managers/RoomManager";
+import { handleJoinRoom, handleLeaveRoom } from "./handlers/roomHandler";
 import ENV from "./utils/ENV";
+import { handleDrawShape, handleClearBoard, handleDeleteShape, handleUpdateShape } from "./handlers/shapeHandler";
+import { handleCursorMove } from "./handlers/cursorHandler";
+import removeSocket from "./handlers/removeSocket";
 
 const Port = ENV.PORT;
 const server = createServer();
 const wss = new WebSocketServer({ server });
-const roomManager = RoomManager.getInstance();
 
 wss.on("connection", (ws: WebSocket) => {
 
@@ -22,17 +24,33 @@ wss.on("connection", (ws: WebSocket) => {
 
                 case "JOIN_ROOM":
 
-                    roomManager.joinRoom(data.payLoad.roomId, ws);
+                    handleJoinRoom(ws, data.payLoad)
                     break;
 
                 case "LEAVE_ROOM":
 
-                    roomManager.leaveRoom(data.payLoad.roomId, ws);
+                    handleLeaveRoom(ws, data.payLoad);
                     break;
 
                 case "DRAW":
 
-                    roomManager.broadcast(data.payLoad.roomId, data, ws);
+                    handleDrawShape(ws, data.payLoad);
+                    break;
+
+                case "UPDATE_SHAPE":
+                    handleUpdateShape(ws, data.payLoad);
+                    break;
+
+                case "DELETE_SHAPE":
+                    handleDeleteShape(ws, data.payLoad);
+                    break;
+
+                case "CURSOR_MOVE":
+                    handleCursorMove(ws, data.payLoad);
+                    break;
+
+                case "CLEAR_BOARD":
+                    handleClearBoard(ws, data.payLoad);
                     break;
 
             };
@@ -44,7 +62,7 @@ wss.on("connection", (ws: WebSocket) => {
     });
 
     ws.on("close", () => {
-        roomManager.removeSocket(ws);
+         removeSocket(ws)
         console.log("Client Disconnected");
     });
 });
