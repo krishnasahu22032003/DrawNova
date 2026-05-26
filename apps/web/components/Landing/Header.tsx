@@ -123,8 +123,8 @@ export default function Header() {
                 <Image
                   src="/Logo.png"
                   alt="Draw Nova Logo"
-                  width={44}
-                  height={44}
+                  width={54}
+                  height={54}
                   priority
                   className="
                     relative
