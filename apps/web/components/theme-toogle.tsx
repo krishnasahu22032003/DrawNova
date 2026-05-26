@@ -1,10 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+
 import { Sun, Moon } from "lucide-react";
 
 export function ToggleTheme() {
+  const [mounted, setMounted] = useState(false);
+
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div
+        className="
+          h-11
+          w-11
+        "
+      />
+    );
+  }
 
   return (
     <button
@@ -19,6 +38,9 @@ export function ToggleTheme() {
         items-center
         justify-center
         rounded-2xl
+        border
+        border-border
+        bg-surface
         text-foreground-secondary
         transition-all
         duration-300
