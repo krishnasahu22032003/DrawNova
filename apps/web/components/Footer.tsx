@@ -10,6 +10,7 @@ export default function Footer() {
         border-border
         bg-background/80
         backdrop-blur-xl
+       
       "
     >
       <div
