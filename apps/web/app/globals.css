@@ -1,2 +1,79 @@
 @import "tailwindcss";
 
+:root {
+  --background: #f5f7fb;
+  --background-secondary: #eef2ff;
+
+  --surface: #ffffff;
+  --surface-elevated: #f8fafc;
+
+  --foreground: #0f172a;
+  --foreground-secondary: #475569;
+  --foreground-muted: #64748b;
+
+  --primary: #5b5cf0;
+  --primary-hover: #4f46e5;
+
+  --accent: #06b6d4;
+
+  --border: rgba(15, 23, 42, 0.08);
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+.dark {
+  --background: #060816;
+  --background-secondary: #0b1023;
+
+  --surface: #0f172a;
+  --surface-elevated: #131c31;
+
+  --foreground: #f8fafc;
+  --foreground-secondary: #cbd5e1;
+  --foreground-muted: #94a3b8;
+
+  --primary: #7c7dff;
+  --primary-hover: #9394ff;
+
+  --accent: #22d3ee;
+
+  --border: rgba(255, 255, 255, 0.08);
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
+
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+
+  --color-accent: var(--accent);
+
+  --color-border: var(--border);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
