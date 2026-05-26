@@ -1,9 +1,2 @@
-:root {
-  --font-heading: var(--font-sora);
-  --font-body: var(--font-inter);
-  --font-accent: var(--font-space);
-}
+@import "tailwindcss";
 
-body {
-  font-family: var(--font-body);
-}
