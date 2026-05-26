@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "../lib/Utils";
 
 type ButtonVariant =
   | "primary"
@@ -63,10 +63,6 @@ export function Button({
         whitespace-nowrap
       `,
 
-        // ======================
-        // SIZES
-        // ======================
-
         size === "sm" &&
           `
           h-10
@@ -93,10 +89,6 @@ export function Button({
           h-12
           w-12
         `,
-
-        // ======================
-        // VARIANTS
-        // ======================
 
         variant === "primary" &&
           `
@@ -168,7 +160,7 @@ export function Button({
       )}
       {...props}
     >
-      {/* Glow Effect */}
+
       <span
         className="
           absolute
@@ -195,7 +187,6 @@ export function Button({
         />
       </span>
 
-      {/* Content */}
       <span className="relative z-10 flex items-center gap-2">
         {loading && (
           <Loader2 className="h-4 w-4 animate-spin" />
