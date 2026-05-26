@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Sora, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "../components/Providers/theme-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,7 +35,7 @@ export default function RootLayout({
           ${inter.variable}
           ${sora.variable}
           ${spaceGrotesk.variable}`}>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
