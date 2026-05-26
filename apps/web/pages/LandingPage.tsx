@@ -1,4 +1,5 @@
 import AboutSection from "../components/Landing/About";
+import CTASection from "../components/Landing/CTA";
 import FeaturesSection from "../components/Landing/Features";
 import Header from "../components/Landing/Header";
 import HeroSection from "../components/Landing/Hero";
@@ -13,6 +14,7 @@ export default function LandingPage() {
       <AboutSection/>
       <FeaturesSection/>
       <TestimonialsSection/>
+      <CTASection/>
     </main>
   );
 }
