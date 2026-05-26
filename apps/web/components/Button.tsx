@@ -44,6 +44,7 @@ export function Button({
         `
         group
         relative
+        cursor-pointer
         inline-flex
         items-center
         justify-center
@@ -73,7 +74,7 @@ export function Button({
 
         size === "md" &&
           `
-          h-12
+          h-11
           px-6
           text-sm
         `,

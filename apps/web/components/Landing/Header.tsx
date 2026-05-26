@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+
 import { Button } from "../Button";
 import { ToggleTheme } from "../theme-toogle";
 
@@ -12,7 +14,7 @@ export default function Header() {
 
   useEffect(() => {
     const controlNavbar = () => {
-      if (window.scrollY > lastScrollY) {
+      if (window.scrollY > lastScrollY && window.scrollY > 80) {
         setVisible(false);
       } else {
         setVisible(true);
@@ -48,14 +50,14 @@ export default function Header() {
   ];
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {visible && (
         <motion.header
-          initial={{ y: -100, opacity: 0 }}
+          initial={{ y: -80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -100, opacity: 0 }}
+          exit={{ y: -80, opacity: 0 }}
           transition={{
-            duration: 0.35,
+            duration: 0.45,
             ease: [0.22, 1, 0.36, 1],
           }}
           className="
@@ -64,34 +66,26 @@ export default function Header() {
             left-0
             right-0
             z-50
-            flex
-            justify-center
-            px-4
-            pt-4
+            border-b
+            border-border/70
+            bg-background/75
+            backdrop-blur-2xl
           "
         >
           <div
             className="
+              mx-auto
               flex
+              h-[78px]
               w-full
-              max-w-7xl
+              max-w-6xl
               items-center
               justify-between
-              rounded-3xl
-              border
-              border-border
-              bg-surface/80
               px-6
-              py-4
-              shadow-[0_8px_40px_rgba(0,0,0,0.08)]
-              backdrop-blur-2xl
-              transition-all
-              duration-300
             "
           >
-
             <Link
-              href="/"
+              href="#home"
               className="
                 group
                 flex
@@ -99,48 +93,44 @@ export default function Header() {
                 gap-3
               "
             >
-
               <div
                 className="
                   relative
                   flex
-                  h-11
-                  w-11
                   items-center
                   justify-center
                   overflow-hidden
                   rounded-2xl
-                  bg-gradient-to-br
-                  from-primary
-                  via-violet-500
-                  to-accent
-                  shadow-[0_10px_40px_rgba(91,92,240,0.35)]
                   transition-all
                   duration-500
-                  group-hover:scale-105
-                  group-hover:rotate-3
+                  group-hover:scale-[1.03]
                 "
               >
-                <span
-                  className="
-                    text-lg
-                    font-bold
-                    tracking-tight
-                    text-white
-                  "
-                >
-                  DN
-                </span>
-
                 <div
                   className="
                     absolute
                     inset-0
-                    bg-white/10
+                    rounded-2xl
+                    bg-primary/20
+                    blur-xl
                     opacity-0
                     transition-opacity
                     duration-500
                     group-hover:opacity-100
+                  "
+                />
+
+                <Image
+                  src="/Logo.png"
+                  alt="Draw Nova Logo"
+                  width={44}
+                  height={44}
+                  priority
+                  className="
+                    relative
+                    z-10
+                    rounded-2xl
+                    object-cover
                   "
                 />
               </div>
@@ -148,9 +138,9 @@ export default function Header() {
               <div className="flex flex-col">
                 <span
                   className="
-                    text-lg
+                    text-[1.05rem]
                     font-semibold
-                    tracking-tight
+                    tracking-[-0.03em]
                     text-foreground
                   "
                 >
@@ -161,6 +151,7 @@ export default function Header() {
                   className="
                     text-xs
                     font-medium
+                    tracking-wide
                     text-foreground-muted
                   "
                 >
@@ -169,94 +160,88 @@ export default function Header() {
               </div>
             </Link>
 
-            <nav
-              className="
-                hidden
-                items-center
-                gap-2
-                rounded-2xl
-                border
-                border-border
-                bg-background/60
-                px-3
-                py-2
-                backdrop-blur-xl
-                md:flex
-              "
-            >
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
+            <div className="flex items-center gap-10">
+              <nav className="hidden items-center gap-1 md:flex">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className="
+                      group
+                      relative
+                      px-4
+                      py-2
+                      text-sm
+                      font-medium
+                      tracking-[-0.01em]
+                      text-foreground-secondary
+                      transition-all
+                      duration-300
+                      hover:text-foreground
+                    "
+                  >
+                    <span className="relative z-10">
+                      {link.label}
+                    </span>
+
+                    <span
+                      className="
+                        absolute
+                        inset-x-2
+                        bottom-0
+                        h-[2px]
+                        origin-center
+                        scale-x-0
+                        rounded-full
+                        bg-gradient-to-r
+                        from-primary
+                        to-accent
+                        transition-transform
+                        duration-300
+                        ease-out
+                        group-hover:scale-x-100
+                      "
+                    />
+
+                    <span
+                      className="
+                        absolute
+                        inset-0
+                        rounded-xl
+                        bg-background-secondary
+                        opacity-0
+                        transition-opacity
+                        duration-300
+                        group-hover:opacity-100
+                      "
+                    />
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="flex items-center gap-3">
+                <ToggleTheme />
+
+                <Button
+                  variant="ghost"
                   className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    px-4
-                    py-2
-                    text-sm
-                    font-medium
-                    text-foreground-secondary
-                    transition-all
-                    duration-300
-                    hover:text-foreground
+                    hidden
+                    md:inline-flex
                   "
                 >
-                  <span className="relative z-10">
-                    {link.label}
-                  </span>
+                  Sign In
+                </Button>
 
-                  <span
-                    className="
-                      absolute
-                      inset-0
-                      z-0
-                      scale-90
-                      rounded-xl
-                      bg-background-secondary
-                      opacity-0
-                      transition-all
-                      duration-300
-                      group-hover:scale-100
-                      group-hover:opacity-100
-                    "
-                  />
-
-                  <span
-                    className="
-                      absolute
-                      bottom-0
-                      left-1/2
-                      h-[2px]
-                      w-0
-                      -translate-x-1/2
-                      rounded-full
-                      bg-gradient-to-r
-                      from-primary
-                      to-accent
-                      transition-all
-                      duration-300
-                      group-hover:w-8
-                    "
-                  />
-                </Link>
-              ))}
-            </nav>
-
-            <div className="flex items-center gap-3">
-              <ToggleTheme />
-
-              <Button
-                variant="ghost"
-                className="hidden md:inline-flex"
-              >
-                Sign In
-              </Button>
-
-              <Button variant="gradient">
-                Sign Up
-              </Button>
+                <Button
+                  variant="gradient"
+                  size="md"
+                  className="
+                    shadow-[0_12px_40px_rgba(91,92,240,0.28)]
+                  "
+                >
+                  Sign Up
+                </Button>
+              </div>
             </div>
           </div>
         </motion.header>
