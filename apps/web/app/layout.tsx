@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Sora, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/Providers/theme-provider";
+import Footer from "../components/Footer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,7 +22,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Draw Nova — Real-Time Collaborative Whiteboard",
   description:
-  "A modern collaborative drawing board to sketch, brainstorm, and create together in real time.",
+    "A modern collaborative drawing board to sketch, brainstorm, and create together in real time.",
 };
 
 export default function RootLayout({
@@ -35,7 +36,11 @@ export default function RootLayout({
           ${inter.variable}
           ${sora.variable}
           ${spaceGrotesk.variable}`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <Footer />
+        </ThemeProvider>
+
       </body>
     </html>
   );
