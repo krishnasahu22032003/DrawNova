@@ -1,5 +1,4 @@
 import AxiosInstance from "./axios";
-import ENV_SECRETS from "./ENV";
 
 interface SignUp {
 

@@ -13,19 +13,21 @@ import {
   User,
   X,
 } from "lucide-react";
-
 import { useMemo, useState } from "react";
 import { Button } from "../../components/Button";
+import SignupUser from "../../lib/signup";
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] =
     useState(false);
-
+  const [username , setUsername] = useState<string | null>("")
+  const [email , setEmail ] = useState<string |null>("")
   const [
     showConfirmPassword,
     setShowConfirmPassword,
   ] = useState(false);
-
+   const [loading , setLoading ] = useState<boolean  | undefined >(false)
   const [password, setPassword] = useState("");
 
   const [confirmPassword, setConfirmPassword] =
@@ -43,6 +45,8 @@ export default function SignupPage() {
     [password]
   );
 
+  const router = useRouter(); 
+
   const passwordsMatch =
     password.length > 0 &&
     confirmPassword.length > 0 &&
@@ -52,6 +56,43 @@ export default function SignupPage() {
     Object.values(passwordChecks).every(Boolean) &&
     passwordsMatch;
 
+
+   async function handleSubmit(e:React.FormEvent<HTMLFormElement>){
+     
+  e.preventDefault() ; 
+
+  if(!username || !email || !password){
+    toast.error(
+      "Please fill all fields"
+    );
+
+    return ;
+  } ;
+
+  try{
+    
+    setLoading(true)
+    const response = await SignupUser({username , email  , password}) ;
+
+    toast.success(
+      response.message ||
+        "Account created successfully"
+    );
+
+    router.push("/signin")
+  }catch (error: any) {
+    toast.error(
+      error.message ||
+        "Something went wrong"
+    );
+  }finally{
+    setLoading(false)
+  };
+    
+    };
+
+
+  
   return (
     <main
       className="
@@ -239,6 +280,7 @@ export default function SignupPage() {
                   />
 
                   <input
+                   onChange={(e)=>setUsername(e.target.value)}
                     type="text"
                     placeholder="Enter your name"
                     className="
@@ -288,6 +330,7 @@ export default function SignupPage() {
 
                   <input
                     type="email"
+                    onChange={(e)=>setEmail(e.target.value)}
                     placeholder="Enter your email"
                     className="
                       h-13
@@ -570,9 +613,10 @@ export default function SignupPage() {
               </div>
 
               <Button
+               type="submit"
                 variant="gradient"
                 size="lg"
-                disabled={!allValid}
+                disabled={!allValid && loading}
                 className="
                   mt-1
                   h-13
@@ -581,7 +625,7 @@ export default function SignupPage() {
                   shadow-[0_20px_80px_rgba(91,92,240,0.28)]
                 "
               >
-                Create Account
+                {loading ? "Creating..." : "Create Account"}
 
                 <ArrowRight size={17} />
               </Button>
