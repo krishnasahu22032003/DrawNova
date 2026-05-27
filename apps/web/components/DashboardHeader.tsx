@@ -16,10 +16,11 @@ import {
 } from "lucide-react";
 
 import { ToggleTheme } from "./theme-toogle";
+import UpdateProfileModal from "./modals/UpdateProfileModal";
 
 export default function DashboardHeader() {
   const [open, setOpen] = useState(false);
-
+  const [profileModalOpen, setProfileModalOpen] =useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
 
@@ -259,10 +260,11 @@ export default function DashboardHeader() {
                       backdrop-blur-2xl
                     "
                   >
-                    <Link
-                      href="/profile"
+                    <button
+                     onClick={()=>setProfileModalOpen(true)}
                       className="
                         flex
+                        cursor-pointer
                         items-center
                         gap-3
                         rounded-xl
@@ -279,7 +281,7 @@ export default function DashboardHeader() {
                     >
                       <Settings className="h-4 w-4" />
                       Update Profile
-                    </Link>
+                    </button>
 
                     <button
                       className="
@@ -520,8 +522,8 @@ export default function DashboardHeader() {
                   <ToggleTheme />
                 </div>
 
-                <Link
-                  href="/profile"
+                <button
+                  onClick={()=>setProfileModalOpen(true)}
                   className="
                     flex
                     items-center
@@ -544,7 +546,7 @@ export default function DashboardHeader() {
                 >
                   <Settings className="h-5 w-5" />
                   Update Profile
-                </Link>
+                </button>
 
                 <button
                   className="
@@ -573,6 +575,7 @@ export default function DashboardHeader() {
           </>
         )}
       </AnimatePresence>
+      <UpdateProfileModal open={profileModalOpen} onClose={()=>setProfileModalOpen(false)}/>
     </>
   );
 }
