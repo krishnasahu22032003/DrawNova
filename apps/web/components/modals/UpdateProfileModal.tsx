@@ -6,8 +6,9 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-
-import { useState } from "react";
+import UpdateUserDetails from "../../lib/updateprofile";
+import React, { useState } from "react";
+import { toast } from "sonner";
 
 interface UpdateProfileModalProps {
   open: boolean;
@@ -30,25 +31,75 @@ export default function UpdateProfileModal({
   const [loading, setLoading] =
     useState(false);
 
-  const handleUpdateProfile =
-    async () => {
-      try {
-        setLoading(true);
+async function handleUpdateProfile() {
+  if (loading) return;
 
-        console.log({
-          username,
-          email,
-          password,
-        });
+  const cleanedEmail =
+    email.trim().toLowerCase();
 
-        setTimeout(() => {
-          setLoading(false);
-          onClose();
-        }, 1200);
-      } catch (error) {
-        setLoading(false);
-      }
-    };
+  const cleanedUsername =
+    username.trim();
+
+  const cleanedPassword =
+    password.trim();
+
+  const payload: {
+    email?: string;
+    username?: string;
+    password?: string;
+  } = {};
+
+  if (cleanedEmail) {
+    payload.email = cleanedEmail;
+  }
+
+  if (cleanedUsername) {
+    payload.username =
+      cleanedUsername;
+  }
+
+  if (cleanedPassword) {
+    payload.password =
+      cleanedPassword;
+  }
+
+  if (
+    Object.keys(payload).length === 0
+  ) {
+    toast.error(
+      "Please enter at least one field"
+    );
+
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const response =
+      await UpdateUserDetails(
+        payload
+      );
+
+    toast.success(
+      response.message ||
+        "Profile updated successfully"
+    );
+
+    onClose();
+
+    setUsername("");
+    setEmail("");
+    setPassword("");
+  } catch (error: any) {
+    toast.error(
+      error.message ||
+        "Something went wrong"
+    );
+  } finally {
+    setLoading(false);
+  }
+}
 
   return (
     <AnimatePresence>

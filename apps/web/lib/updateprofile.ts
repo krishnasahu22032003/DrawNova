@@ -29,7 +29,7 @@ export default async function UpdateUserDetails(UserData: UpdateProfile): Promis
 
     try {
 
-        const res = await AxiosInstance.post<UpdateUserResponse>("/api/v1/user/update", UserData);
+        const res = await AxiosInstance.patch<UpdateUserResponse>("/api/v1/user/update", UserData);
 
         return res.data;
 
