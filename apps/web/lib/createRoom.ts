@@ -2,7 +2,7 @@ import AxiosInstance from "./axios";
 
 interface CreateRoomInput {
   name: string;
-  maxUser: number;
+  maxUsers: number;
 }
 
 interface Data {

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-
+import CreateRoomModal from "./modals/CreateRoomModal";
 import {
   LogOut,
   Menu,
@@ -24,6 +24,8 @@ export default function DashboardHeader() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
+    const [createRoomOpen, setCreateRoomOpen] =
+  useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef =
     useRef<HTMLDivElement>(null);
@@ -145,6 +147,7 @@ export default function DashboardHeader() {
 
           <div className="hidden items-center gap-3 md:flex">
             <button
+              onClick={()=>setCreateRoomOpen(true)}
               className="
                 group
                 flex
@@ -436,9 +439,10 @@ export default function DashboardHeader() {
   "
               >
                 <button
-                  onClick={() =>
+                  onClick={() =>{
                     setMobileMenuOpen(false)
-                  }
+                    setCreateRoomOpen(true)
+                  }}
                   className="
       flex
       h-10
@@ -618,6 +622,7 @@ export default function DashboardHeader() {
         )}
       </AnimatePresence>
       <UpdateProfileModal open={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
+        <CreateRoomModal open={createRoomOpen} onClose={()=>setCreateRoomOpen(false)}/>
     </>
   );
 }

@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import createRoom from "../../lib/createRoom";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface CreateRoomModalProps {
   open: boolean;
@@ -29,6 +30,8 @@ export default function CreateRoomModal({
 
   const [loading, setLoading] =
     useState(false);
+    
+    const router = useRouter() ; 
 
   async function handleCreateRoom() {
     if (loading) return;
@@ -38,12 +41,30 @@ export default function CreateRoomModal({
 
     const cleanedMaxUsers =
       maxUser.trim();
+ 
+  const parsedMaxUsers =
+  Number(cleanedMaxUsers);
 
+if (parsedMaxUsers > 3) {
+  toast.error(
+    "Maximum 3 users allowed"
+  );
+
+  return;
+}
+if (parsedMaxUsers < 1) {
+  toast.error(
+    "At least 1 user required"
+  );
+
+  return;
+}
     try {
       setLoading(true);
 
-      const response = await createRoom({name : cleanedRoomName , maxUser :Number(cleanedMaxUsers)})
+      const response = await createRoom({name : cleanedRoomName , maxUsers :Number(cleanedMaxUsers)})
       toast.success(response.message || "Room created successfully");
+      router.push(`room/${response.data.room.id}`)
     } catch (error : any) {
       toast.error(error.message || "Something Went Wrong")
     }finally{
@@ -314,6 +335,7 @@ export default function CreateRoomModal({
                   flex
                   h-14
                   w-full
+                  cursor-pointer
                   items-center
                   justify-center
                   gap-3
