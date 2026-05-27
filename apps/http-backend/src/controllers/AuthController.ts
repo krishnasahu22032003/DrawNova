@@ -158,7 +158,7 @@ export async function UserSignOut(req: Request, res: Response) {
         const token = req.cookies[AUTH_COOKIE_NAME];
 
         if (token) {
-            await prisma.session.delete({
+            await prisma.session.deleteMany({
                 where: {
                     token
                 }
@@ -335,6 +335,8 @@ export async function UpdateUserDetails(
           userId,
         },
       });
+ 
+    res.clearCookie(AUTH_COOKIE_NAME, AUTH_COOKIE_OPTIONS) ;     
     }
 
     return res.status(200).json({

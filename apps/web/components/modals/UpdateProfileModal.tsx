@@ -9,6 +9,7 @@ import {
 import UpdateUserDetails from "../../lib/updateprofile";
 import React, { useState } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface UpdateProfileModalProps {
   open: boolean;
@@ -30,6 +31,8 @@ export default function UpdateProfileModal({
 
   const [loading, setLoading] =
     useState(false);
+   
+ const router = useRouter() ; 
 
 async function handleUpdateProfile() {
   if (loading) return;
@@ -80,6 +83,16 @@ async function handleUpdateProfile() {
       await UpdateUserDetails(
         payload
       );
+
+    if (payload.password) {
+      toast.success(
+        "Password updated. Please sign in again."
+      );
+
+      router.push("/signin");
+
+      return;
+    }
 
     toast.success(
       response.message ||

@@ -6,7 +6,7 @@ const UserRouter:Router= express.Router() ;
 
 UserRouter.post("/signup" , UserSignUp) ; 
 UserRouter.post("/signin" , UserSignIn) ; 
-UserRouter.delete("/signout" , authMiddleware,UserSignOut) ; 
+UserRouter.delete("/signout" ,UserSignOut) ; 
 UserRouter.get("/me" , authMiddleware,getUserDetails) ; 
 UserRouter.patch("/update" , authMiddleware,UpdateUserDetails) ; 
 
