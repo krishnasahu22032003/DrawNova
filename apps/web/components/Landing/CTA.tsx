@@ -6,6 +6,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "../Button";
+import Link from "next/link";
 
 export default function CTASection() {
   return (
@@ -286,7 +287,8 @@ export default function CTASection() {
                 justify-center
               "
             >
-              <Button
+                <Link href="/signin">
+                    <Button
                 variant="gradient"
                 size="lg"
                 className="
@@ -300,6 +302,8 @@ export default function CTASection() {
 
                 <ArrowRight size={18} />
               </Button>
+                </Link>
+          
             </motion.div>
           </div>
         </div>

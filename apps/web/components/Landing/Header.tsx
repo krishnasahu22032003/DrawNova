@@ -221,8 +221,9 @@ export default function Header() {
 
               <div className="flex items-center gap-3">
                 <ToggleTheme />
-
-                <Button
+               
+<Link href="/signin">
+   <Button
                   variant="ghost"
                   className="
                     hidden
@@ -231,6 +232,9 @@ export default function Header() {
                 >
                   Sign In
                 </Button>
+</Link>
+             
+<Link href="/signup">
 
                 <Button
                   variant="gradient"
@@ -241,6 +245,7 @@ export default function Header() {
                 >
                   Sign Up
                 </Button>
+</Link>
               </div>
             </div>
           </div>

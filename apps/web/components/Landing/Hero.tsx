@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "../Button";
+import Link from "next/link";
 
 export default function HeroSection() {
     return (
@@ -210,7 +211,9 @@ export default function HeroSection() {
                         }}
                         className="mt-11 flex justify-center"
                     >
-                        <Button
+
+                        <Link href="/signin">
+                                 <Button
                             variant="gradient"
                             size="lg"
                             className="
@@ -224,6 +227,8 @@ export default function HeroSection() {
 
                             <ArrowRight size={18} />
                         </Button>
+                        </Link>
+               
                     </motion.div>
 
                     <motion.div
