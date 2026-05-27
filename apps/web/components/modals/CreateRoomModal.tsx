@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 
 import { useState } from "react";
+import createRoom from "../../lib/createRoom";
+import { toast } from "sonner";
 
 interface CreateRoomModalProps {
   open: boolean;
@@ -19,10 +21,10 @@ export default function CreateRoomModal({
   open,
   onClose,
 }: CreateRoomModalProps) {
-  const [roomName, setRoomName] =
+  const [name, setName] =
     useState("");
 
-  const [maxUsers, setMaxUsers] =
+  const [maxUser, setMaxUser] =
     useState("");
 
   const [loading, setLoading] =
@@ -32,37 +34,20 @@ export default function CreateRoomModal({
     if (loading) return;
 
     const cleanedRoomName =
-      roomName.trim();
+      name.trim();
 
     const cleanedMaxUsers =
-      maxUsers.trim();
-
-    if (
-      !cleanedRoomName ||
-      !cleanedMaxUsers
-    ) {
-      return;
-    }
+      maxUser.trim();
 
     try {
       setLoading(true);
 
-      console.log({
-        roomName: cleanedRoomName,
-        maxUsers:
-          Number(cleanedMaxUsers),
-      });
-
-      setTimeout(() => {
-        setLoading(false);
-
-        onClose();
-
-        setRoomName("");
-        setMaxUsers("");
-      }, 1200);
-    } catch (error) {
-      setLoading(false);
+      const response = await createRoom({name : cleanedRoomName , maxUser :Number(cleanedMaxUsers)})
+      toast.success(response.message || "Room created successfully");
+    } catch (error : any) {
+      toast.error(error.message || "Something Went Wrong")
+    }finally{
+      setLoading(false) ;
     }
   }
 
@@ -237,9 +222,9 @@ export default function CreateRoomModal({
                 <input
                   type="text"
                   placeholder="Enter room name"
-                  value={roomName}
+                  value={name}
                   onChange={(e) =>
-                    setRoomName(
+                    setName(
                       e.target.value
                     )
                   }
@@ -291,9 +276,9 @@ export default function CreateRoomModal({
                   <input
                     type="number"
                     placeholder="Enter max users"
-                    value={maxUsers}
+                    value={maxUser}
                     onChange={(e) =>
-                      setMaxUsers(
+                      setMaxUser(
                         e.target.value
                       )
                     }
