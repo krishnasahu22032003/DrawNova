@@ -12,7 +12,7 @@ export default async function UserSignOut():Promise<SignOutResponse>{
 
 try{
 
-const res = await AxiosInstance.post<SignOutResponse>("/api/v1/user/signout");
+const res = await AxiosInstance.delete<SignOutResponse>("/api/v1/user/signout");
 
 return res.data ; 
 

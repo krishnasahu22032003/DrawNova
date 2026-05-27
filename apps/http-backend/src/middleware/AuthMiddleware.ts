@@ -42,6 +42,8 @@ const session = await prisma.session.findUnique({
     }
 
     req.userId = decoded.userId;
+
+    next() ; 
 }catch(error){
   console.error(error);
 

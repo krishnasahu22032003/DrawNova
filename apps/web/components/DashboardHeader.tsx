@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
@@ -14,18 +13,22 @@ import {
   Users,
   X,
 } from "lucide-react";
-
+import { useRouter } from "next/navigation";
 import { ToggleTheme } from "./theme-toogle";
 import UpdateProfileModal from "./modals/UpdateProfileModal";
+import UserSignOut from "../lib/signout";
+import { toast } from "sonner";
 
 export default function DashboardHeader() {
   const [open, setOpen] = useState(false);
-  const [profileModalOpen, setProfileModalOpen] =useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
-
+  const [loading, setLoading] = useState(false);
   const dropdownRef =
     useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     const handleOutsideClick = (
@@ -53,6 +56,27 @@ export default function DashboardHeader() {
       );
     };
   }, []);
+
+  async function handleSignout() {
+
+    if (loading) return;
+
+    try {
+
+      setLoading(true);
+      const response = await UserSignOut();
+
+      toast.success(response.message || "Logout Successfully");
+
+      router.push("/signin")
+    } catch (error: any) {
+
+      toast.error(error.message || "Something Went Wrong")
+    } finally {
+      setLoading(false);
+    };
+  };
+
 
   return (
     <>
@@ -89,7 +113,7 @@ export default function DashboardHeader() {
           "
         >
           <div
-           
+
             className="
               flex
               items-center
@@ -261,7 +285,10 @@ export default function DashboardHeader() {
                     "
                   >
                     <button
-                     onClick={()=>setProfileModalOpen(true)}
+                      onClick={() => {
+                        setOpen(false);
+                        setProfileModalOpen(true);
+                      }}
                       className="
                         flex
                         cursor-pointer
@@ -284,10 +311,16 @@ export default function DashboardHeader() {
                     </button>
 
                     <button
+                      disabled={loading}
+                      onClick={() => {
+  setOpen(false);
+  handleSignout();
+}}
                       className="
                         flex
                         w-full
                         items-center
+                        cursor-pointer
                         gap-3
                         rounded-xl
                         px-4
@@ -301,7 +334,7 @@ export default function DashboardHeader() {
                       "
                     >
                       <LogOut className="h-4 w-4" />
-                      Sign Out
+                      {loading ? "Please Wait..." : "Sign Out"}
                     </button>
                   </motion.div>
                 )}
@@ -394,19 +427,19 @@ export default function DashboardHeader() {
                 md:hidden
               "
             >
-          <div
-  className="
+              <div
+                className="
     mb-10
     flex
     items-center
     justify-end
   "
->
-  <button
-    onClick={() =>
-      setMobileMenuOpen(false)
-    }
-    className="
+              >
+                <button
+                  onClick={() =>
+                    setMobileMenuOpen(false)
+                  }
+                  className="
       flex
       h-10
       w-10
@@ -422,10 +455,10 @@ export default function DashboardHeader() {
       hover:border-primary/40
       hover:bg-background-secondary
     "
-  >
-    <X className="h-5 w-5" />
-  </button>
-</div>
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
               <div className="flex flex-col gap-3">
                 <button
@@ -523,7 +556,10 @@ export default function DashboardHeader() {
                 </div>
 
                 <button
-                  onClick={()=>setProfileModalOpen(true)}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+  setProfileModalOpen(true);
+                  }}
                   className="
                     flex
                     items-center
@@ -549,12 +585,18 @@ export default function DashboardHeader() {
                 </button>
 
                 <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleSignout();
+                  }}
+                  disabled={loading}
                   className="
                     flex
                     items-center
                     gap-3
                     rounded-2xl
                     border
+                    cursor-pointer
                     border-red-500/20
                     bg-red-500/10
                     px-5
@@ -568,14 +610,14 @@ export default function DashboardHeader() {
                   "
                 >
                   <LogOut className="h-5 w-5" />
-                  Sign Out
+                  {loading ? "Please Wait..." : "Sign Out"}
                 </button>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
-      <UpdateProfileModal open={profileModalOpen} onClose={()=>setProfileModalOpen(false)}/>
+      <UpdateProfileModal open={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
     </>
   );
 }
