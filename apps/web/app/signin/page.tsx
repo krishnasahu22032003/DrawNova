@@ -11,14 +11,51 @@ import {
   Mail,
   Sparkles,
 } from "lucide-react";
-
+import UserSignIn from "../../lib/signin";
 import { useState } from "react";
 import { Button } from "../../components/Button";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function SigninPage() {
   const [showPassword, setShowPassword] =
     useState(false);
- 
+  const [password , setPassword] = useState("");
+  const [email , setEmail ] = useState("");
+  const [loading , setLoading] = useState(false);
+  const router = useRouter();
+
+async function handleSubmit(e : React.FormEvent<HTMLFormElement>){
+
+e.preventDefault() ; 
+if(loading) return    ;
+if(!email.trim() || !password.trim()){
+
+  toast.error("All fields are required ");
+  return 
+};
+
+const cleanedEmail = email.trim().toLowerCase();
+
+try{
+   
+setLoading(true);
+
+  const response = await UserSignIn({email:cleanedEmail , password}) ;
+
+  toast.success(response.message || "Signed in successfully");
+
+router.push("/dashboard");
+}catch(error:any){
+
+toast.error(error.message || "Something Went Wrong")
+
+}finally{
+  setLoading(false);
+};
+
+};
+
   return (
     <main
       className="
@@ -181,7 +218,7 @@ export default function SigninPage() {
               </p>
             </div>
 
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label
                   className="
@@ -206,6 +243,8 @@ export default function SigninPage() {
                   />
 
                   <input
+                  value={email}
+                  onChange={(e)=>setEmail(e.target.value)}
                     type="email"
                     placeholder="Enter your email"
                     className="
@@ -263,6 +302,8 @@ export default function SigninPage() {
                   />
 
                   <input
+                  value={password}
+                  onChange={(e)=>setPassword(e.target.value)}
                     type={
                       showPassword
                         ? "text"
@@ -315,6 +356,8 @@ export default function SigninPage() {
               </div>
 
               <Button
+              disabled={loading}
+              type="submit"
                 variant="gradient"
                 size="lg"
                 className="
@@ -325,9 +368,11 @@ export default function SigninPage() {
                   shadow-[0_20px_80px_rgba(91,92,240,0.28)]
                 "
               >
-                Sign In
-
-                <ArrowRight size={17} />
+               {loading ? "Please Wait..." : "Sign In"}
+{!loading && (
+<ArrowRight size={17} />
+)}
+                
               </Button>
             </form>
 
