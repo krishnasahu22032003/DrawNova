@@ -210,7 +210,7 @@ export async function getUserDetails(req: Request, res: Response) {
         };
         return res.status(200).json({
             success: true,
-            data: user
+            data: user  
         });
     } catch (error) {
         console.error("GetUserDetails Error:", error)

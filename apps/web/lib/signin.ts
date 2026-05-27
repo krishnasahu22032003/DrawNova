@@ -1,5 +1,4 @@
 import AxiosInstance from "./axios";
-import ENV_SECRETS from "./ENV";
 
 interface SignIn {
 
@@ -32,7 +31,7 @@ export default async function UserSignIn(SignData: SignIn): Promise<SignInRespon
     } catch (error: any) {
 
         throw new Error(error.response.data.message || "Signin Failed")
-        
+
     };
 
 };
