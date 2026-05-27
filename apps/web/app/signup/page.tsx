@@ -15,19 +15,19 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../../components/Button";
-import SignupUser from "../../lib/signup";
+import signupUser from "../../lib/signup";
 import { useRouter } from "next/navigation";
-
+import { toast } from "sonner";
 export default function SignupPage() {
   const [showPassword, setShowPassword] =
     useState(false);
-  const [username , setUsername] = useState<string | null>("")
-  const [email , setEmail ] = useState<string |null>("")
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [
     showConfirmPassword,
     setShowConfirmPassword,
   ] = useState(false);
-   const [loading , setLoading ] = useState<boolean  | undefined >(false)
+  const [loading, setLoading] = useState(false)
   const [password, setPassword] = useState("");
 
   const [confirmPassword, setConfirmPassword] =
@@ -45,7 +45,7 @@ export default function SignupPage() {
     [password]
   );
 
-  const router = useRouter(); 
+  const router = useRouter();
 
   const passwordsMatch =
     password.length > 0 &&
@@ -57,42 +57,53 @@ export default function SignupPage() {
     passwordsMatch;
 
 
-   async function handleSubmit(e:React.FormEvent<HTMLFormElement>){
-     
-  e.preventDefault() ; 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
 
-  if(!username || !email || !password){
-    toast.error(
-      "Please fill all fields"
-    );
+    e.preventDefault();
 
-    return ;
-  } ;
+    if (!username.trim() || !email.trim() || !password.trim()) {
+      toast.error(
+        "Please fill all fields"
+      );
 
-  try{
+      return;
+    };
     
-    setLoading(true)
-    const response = await SignupUser({username , email  , password}) ;
+ if(password !== confirmPassword){
+  toast.error("Password does not match ")
+  
+return ;
+ }
+   const cleanedUsername =
+  username.trim();
 
-    toast.success(
-      response.message ||
+const cleanedEmail =
+  email.trim().toLowerCase();
+    try {
+
+      setLoading(true)
+
+      const response = await signupUser({ username:cleanedUsername, email:cleanedEmail, password });
+
+      toast.success(
+        response.message ||
         "Account created successfully"
-    );
+      );
 
-    router.push("/signin")
-  }catch (error: any) {
-    toast.error(
-      error.message ||
+      router.push("/signin")
+    } catch (error: any) {
+      toast.error(
+        error.message ||
         "Something went wrong"
-    );
-  }finally{
-    setLoading(false)
-  };
-    
+      );
+    } finally {
+      setLoading(false)
     };
 
+  };
 
-  
+
+
   return (
     <main
       className="
@@ -255,7 +266,7 @@ export default function SignupPage() {
               </p>
             </div>
 
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label
                   className="
@@ -280,7 +291,8 @@ export default function SignupPage() {
                   />
 
                   <input
-                   onChange={(e)=>setUsername(e.target.value)}
+                  value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     type="text"
                     placeholder="Enter your name"
                     className="
@@ -329,8 +341,9 @@ export default function SignupPage() {
                   />
 
                   <input
+                  value={email}
                     type="email"
-                    onChange={(e)=>setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
                     className="
                       h-13
@@ -579,10 +592,9 @@ export default function SignupPage() {
                           rounded-full
                           transition-all
                           duration-300
-                          ${
-                            item.valid
-                              ? "bg-emerald-500/20 text-emerald-500"
-                              : "bg-rose-500/10 text-rose-500"
+                          ${item.valid
+                            ? "bg-emerald-500/20 text-emerald-500"
+                            : "bg-rose-500/10 text-rose-500"
                           }
                         `}
                       >
@@ -598,10 +610,9 @@ export default function SignupPage() {
                           text-[13px]
                           transition-colors
                           duration-300
-                          ${
-                            item.valid
-                              ? "text-foreground"
-                              : "text-foreground-secondary"
+                          ${item.valid
+                            ? "text-foreground"
+                            : "text-foreground-secondary"
                           }
                         `}
                       >
@@ -613,10 +624,10 @@ export default function SignupPage() {
               </div>
 
               <Button
-               type="submit"
+                type="submit"
                 variant="gradient"
                 size="lg"
-                disabled={!allValid && loading}
+                disabled={!allValid || loading}
                 className="
                   mt-1
                   h-13
@@ -626,8 +637,10 @@ export default function SignupPage() {
                 "
               >
                 {loading ? "Creating..." : "Create Account"}
-
-                <ArrowRight size={17} />
+{!loading && (
+  <ArrowRight size={17} />
+)}
+              
               </Button>
             </form>
 

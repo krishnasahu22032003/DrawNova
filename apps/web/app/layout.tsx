@@ -3,6 +3,7 @@ import { Inter, Sora, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/Providers/theme-provider";
 import Footer from "../components/Footer";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function RootLayout({
           ${spaceGrotesk.variable}`}>
         <ThemeProvider>
           {children}
+          <Toaster richColors position="top-center"/>
           <Footer />
         </ThemeProvider>
 

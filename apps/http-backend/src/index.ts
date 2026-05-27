@@ -17,8 +17,8 @@ app.use(cors({
     credentials:true
 }));
 
-app.use("api/v1/user" , UserRouter) ;
-app.use("api/v1/board" , BoardRouter) ; 
-app.use("api/v1/room" , RoomRouter) ; 
+app.use("/api/v1/user" , UserRouter) ;
+app.use("/api/v1/board" , BoardRouter) ; 
+app.use("/api/v1/room" , RoomRouter) ; 
 
 StartServer(app);

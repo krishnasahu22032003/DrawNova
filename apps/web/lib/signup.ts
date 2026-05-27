@@ -21,7 +21,7 @@ interface SignUpResponse {
 };
 
 
-export default async function SignupUser(userData: SignUp): Promise<SignUpResponse> {
+export default async function signupUser(userData: SignUp): Promise<SignUpResponse> {
 
     try {
 

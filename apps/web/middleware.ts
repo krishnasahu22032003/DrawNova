@@ -1,6 +1,6 @@
 import { NextResponse , NextRequest } from "next/server";
 
-export function middleware(request : NextRequest){
+export default function middleware(request : NextRequest){
 
 const token = request.cookies.get("user_token")?.value ;
 
@@ -17,7 +17,7 @@ if(!token && pathname.startsWith("/room")){
 
 };
 
-if(token && (pathname.startsWith("/signin")) || pathname.startsWith("/signup")){
+if(token && (pathname.startsWith("/signin") || pathname.startsWith("/signup"))){
 
 return NextResponse.redirect(new URL("/dashboard" , request.url)) ;
 
