@@ -8,16 +8,15 @@ import {
 } from "react";
 
 import { Tool } from "../types/ToolTypes";
+import {
+  Shape,
+  RectangleShape,
+  CircleShape,
+  LineShape,
+} from "../types/Shape";
 
 interface CanvasProps {
   selectedTool: Tool;
-}
-
-interface Rectangle {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 export const Canvas = ({
@@ -27,7 +26,7 @@ export const Canvas = ({
     useRef<HTMLCanvasElement>(null);
 
   const [shapes, setShapes] =
-    useState<Rectangle[]>([]);
+    useState<Shape[]>([]);
 
   const [isDrawing, setIsDrawing] =
     useState(false);
@@ -35,8 +34,8 @@ export const Canvas = ({
   const startX = useRef(0);
   const startY = useRef(0);
 
-  const currentRect =
-    useRef<Rectangle | null>(null);
+  const previewShape =
+    useRef<Shape | null>(null);
 
   const drawCanvas =
     useCallback(() => {
@@ -62,35 +61,65 @@ export const Canvas = ({
           "dark"
         );
 
-      const strokeColor = isDark
+      ctx.strokeStyle = isDark
         ? "#F8FAFC"
         : "#111827";
 
-      shapes.forEach((shape) => {
-        ctx.strokeStyle =
-          strokeColor;
+      ctx.lineWidth = 2;
 
-        ctx.lineWidth = 2;
+      const drawShape = (
+        shape: Shape
+      ) => {
+        switch (shape.type) {
+          case "rectangle":
+            ctx.strokeRect(
+              shape.x,
+              shape.y,
+              shape.width,
+              shape.height
+            );
+            break;
 
-        ctx.strokeRect(
-          shape.x,
-          shape.y,
-          shape.width,
-          shape.height
-        );
-      });
+          case "circle":
+            ctx.beginPath();
 
-      if (currentRect.current) {
+            ctx.arc(
+              shape.x,
+              shape.y,
+              shape.radius,
+              0,
+              Math.PI * 2
+            );
+
+            ctx.stroke();
+            break;
+
+          case "line":
+            ctx.beginPath();
+
+            ctx.moveTo(
+              shape.startX,
+              shape.startY
+            );
+
+            ctx.lineTo(
+              shape.endX,
+              shape.endY
+            );
+
+            ctx.stroke();
+            break;
+        }
+      };
+
+      shapes.forEach(drawShape);
+
+      if (previewShape.current) {
         ctx.strokeStyle =
           "#5B5CF0";
 
-        ctx.lineWidth = 2;
-
-        ctx.strokeRect(
-          currentRect.current.x,
-          currentRect.current.y,
-          currentRect.current.width,
-          currentRect.current.height
+        drawShape(
+          previewShape.current
         );
       }
     }, [shapes]);
@@ -102,14 +131,11 @@ export const Canvas = ({
     if (!canvas) return;
 
     const resizeCanvas = () => {
-      const headerHeight = 78;
-
       canvas.width =
         window.innerWidth;
 
       canvas.height =
-        window.innerHeight -
-        headerHeight;
+        window.innerHeight - 78;
 
       drawCanvas();
     };
@@ -121,42 +147,23 @@ export const Canvas = ({
       resizeCanvas
     );
 
-    return () => {
+    return () =>
       window.removeEventListener(
         "resize",
         resizeCanvas
       );
-    };
   }, [drawCanvas]);
 
   useEffect(() => {
     drawCanvas();
   }, [drawCanvas]);
 
-  useEffect(() => {
-    const observer =
-      new MutationObserver(() => {
-        drawCanvas();
-      });
-
-    observer.observe(
-      document.documentElement,
-      {
-        attributes: true,
-        attributeFilter: ["class"],
-      }
-    );
-
-    return () =>
-      observer.disconnect();
-  }, [drawCanvas]);
-
   const handleMouseDown = (
     e: React.MouseEvent<HTMLCanvasElement>
   ) => {
     if (
-      selectedTool !==
-      "rectangle"
+      selectedTool ===
+      "select"
     )
       return;
 
@@ -186,33 +193,103 @@ export const Canvas = ({
     const currentY =
       e.clientY - rect.top;
 
-    currentRect.current = {
-      x: startX.current,
-      y: startY.current,
-      width:
-        currentX -
-        startX.current,
-      height:
-        currentY -
-        startY.current,
-    };
+    switch (selectedTool) {
+      case "rectangle": {
+        const shape: RectangleShape =
+          {
+            id:
+              crypto.randomUUID(),
+            type:
+              "rectangle",
+            x: startX.current,
+            y: startY.current,
+            width:
+              currentX -
+              startX.current,
+            height:
+              currentY -
+              startY.current,
+          };
+
+        previewShape.current =
+          shape;
+
+        break;
+      }
+
+      case "circle": {
+        const radius =
+          Math.sqrt(
+            Math.pow(
+              currentX -
+                startX.current,
+              2
+            ) +
+              Math.pow(
+                currentY -
+                  startY.current,
+                2
+              )
+          );
+
+        const shape: CircleShape =
+          {
+            id:
+              crypto.randomUUID(),
+            type: "circle",
+            x: startX.current,
+            y: startY.current,
+            radius,
+          };
+
+        previewShape.current =
+          shape;
+
+        break;
+      }
+
+      case "line": {
+        const shape: LineShape =
+          {
+            id:
+              crypto.randomUUID(),
+            type: "line",
+            startX:
+              startX.current,
+            startY:
+              startY.current,
+            endX: currentX,
+            endY: currentY,
+          };
+
+        previewShape.current =
+          shape;
+
+        break;
+      }
+    }
 
     drawCanvas();
   };
 
- const handleMouseUp = () => {
-  if (!isDrawing) return;
+const handleMouseUp = () => {
+  if (!isDrawing) {
+    return;
+  }
 
-  const rect = currentRect.current;
+  const shape = previewShape.current;
 
-  if (!rect) {
+  if (!shape) {
     setIsDrawing(false);
     return;
   }
 
-  setShapes((prev) => [...prev, rect]);
+  setShapes((prev) => [
+    ...prev,
+    shape,
+  ]);
 
-  currentRect.current = null;
+  previewShape.current = null;
   setIsDrawing(false);
 };
 
@@ -225,7 +302,9 @@ export const Canvas = ({
       onMouseMove={
         handleMouseMove
       }
-      onMouseUp={handleMouseUp}
+      onMouseUp={
+        handleMouseUp
+      }
       className="
         fixed
         left-0
