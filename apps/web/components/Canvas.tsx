@@ -53,6 +53,22 @@ const [isDraggingShape, setIsDraggingShape] =
   ) => {
       if (!shape) return;
     switch (shape.type) {
+
+        case "text":
+  ctx.font =
+    "20px Inter";
+
+  ctx.fillStyle =
+    ctx.strokeStyle;
+
+  ctx.fillText(
+    shape.text,
+    shape.x,
+    shape.y
+  );
+
+  break;
+
       case "rectangle":
         ctx.strokeRect(
           shape.x,
@@ -217,8 +233,34 @@ const [isDraggingShape, setIsDraggingShape] =
 
       shapes.forEach((shape) =>{     
         if (!shape) return;
-        drawShape(ctx, shape)}
-        
+        drawShape(ctx, shape)
+     
+        if (
+    shape.id ===
+    selectedShapeId
+  ) {
+    ctx.save();
+
+    ctx.strokeStyle =
+      "#5B5CF0";
+
+    ctx.lineWidth = 2;
+
+    if (
+      shape.type ===
+      "rectangle"
+    ) {
+      ctx.strokeRect(
+        shape.x - 4,
+        shape.y - 4,
+        shape.width + 8,
+        shape.height + 8
+      );
+    }
+
+    ctx.restore();
+  }
+    }    
       );
       
       if (previewShape.current) {
@@ -344,6 +386,41 @@ const [isDraggingShape, setIsDraggingShape] =
   const handleMouseDown = (
     e: React.MouseEvent<HTMLCanvasElement>
   ) => {
+
+    if (
+  selectedTool === "text"
+) {
+  const rect =
+    e.currentTarget.getBoundingClientRect();
+
+  const x =
+    e.clientX - rect.left;
+
+  const y =
+    e.clientY - rect.top;
+
+  const text =
+    prompt(
+      "Enter text"
+    );
+
+  if (!text) return;
+
+  setShapes((prev) => [
+    ...prev,
+    {
+      id:
+        crypto.randomUUID(),
+      type: "text",
+      x,
+      y,
+      text,
+    },
+  ]);
+
+  return;
+}
+
 if (
   selectedTool ===
   "eraser"
