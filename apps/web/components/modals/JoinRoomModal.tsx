@@ -6,8 +6,10 @@ import {
   Users,
   X,
 } from "lucide-react";
-
+import JoinRoom from "../../lib/joinRoom";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface JoinRoomModalProps {
   open: boolean;
@@ -23,7 +25,31 @@ export default function JoinRoomModal({
 
   const [loading, setLoading] =
     useState(false);
+  const router = useRouter() ; 
 
+  async function handleSubmit(){
+ if(loading) return ;
+ const cleanedRoomId = roomId.trim()
+ if(!cleanedRoomId){
+    toast.error("Room ID is required");
+  return;
+ }
+ try{
+
+    setLoading(true) ; 
+
+    const res = await JoinRoom(cleanedRoomId) ;
+    toast.success(res.message || "Joined Room Successfully");
+    router.push(`/room/${cleanedRoomId}`)
+
+ }catch(error :any ){
+    toast.error(error.message || "Something Went Wrong");
+ }finally{
+    setLoading(false) 
+ }
+
+
+  }
   return (
     <AnimatePresence>
       {open && (
@@ -239,6 +265,7 @@ export default function JoinRoomModal({
               </div>
 
               <button
+              onClick={handleSubmit}
                 disabled={loading}
                 className="
                   flex

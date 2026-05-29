@@ -7,11 +7,11 @@ interface JoinRoomResponse {
 
 };
 
-export default async function JoinRoom(userId: string): Promise<JoinRoomResponse> {
+export default async function JoinRoom(roomId: string): Promise<JoinRoomResponse> {
 
     try {
 
-        const res = await AxiosInstance.post<JoinRoomResponse>("/api/v1/room/join", userId);
+        const res = await AxiosInstance.post<JoinRoomResponse>("/api/v1/room/join", roomId);
 
         return res.data;
 
