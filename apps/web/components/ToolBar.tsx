@@ -140,21 +140,22 @@ export const ToolBar = () => {
   return (
     <div
       className="
-        fixed
-        left-1/2
-        top-5
-        z-50
-        flex
-        -translate-x-1/2
-        items-center
-        gap-1
-        rounded-3xl
-        border
-        border-border/70
-        bg-background/90
-        p-2
-        shadow-[0_20px_60px_rgba(0,0,0,0.35)]
-        backdrop-blur-xl
+       fixed
+    left-5
+    top-1/2
+    z-50
+    flex
+    -translate-y-1/2
+    flex-col
+    items-center
+    gap-1
+    rounded-3xl
+    border
+    border-border/70
+    bg-background/90
+    p-2
+    shadow-[0_20px_60px_rgba(0,0,0,0.35)]
+    backdrop-blur-xl
       "
     >
       {tools.map((tool, index) => {
