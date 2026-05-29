@@ -33,6 +33,10 @@ export const Canvas = ({
 
   const [isDrawing, setIsDrawing] =
     useState(false);
+  const [selectedShapeId, setSelectedShapeId] =
+  useState<string | null>(null);
+const [isDraggingShape, setIsDraggingShape] =
+  useState(false);
 
   const startX = useRef(0);
   const startY = useRef(0);
@@ -214,8 +218,9 @@ export const Canvas = ({
       shapes.forEach((shape) =>{     
         if (!shape) return;
         drawShape(ctx, shape)}
+        
       );
-
+      
       if (previewShape.current) {
         ctx.strokeStyle =
           "#5B5CF0";
@@ -235,6 +240,8 @@ export const Canvas = ({
           currentPencil.current
         );
       }
+
+       
     }, [shapes]);
 
   useEffect(() => {
@@ -289,13 +296,113 @@ export const Canvas = ({
     drawCanvas();
   }, [drawCanvas]);
 
+  const findShapeAtPoint = (
+  x: number,
+  y: number
+): Shape | null => {
+  for (
+    let i = shapes.length - 1;
+    i >= 0;
+    i--
+  ) {
+    const shape = shapes[i];
+
+    if (!shape) continue;
+
+    switch (shape.type) {
+      case "rectangle":
+        if (
+          x >= shape.x &&
+          x <= shape.x + shape.width &&
+          y >= shape.y &&
+          y <= shape.y + shape.height
+        ) {
+          return shape;
+        }
+        break;
+
+      case "circle":
+        const distance =
+          Math.sqrt(
+            (x - shape.x) ** 2 +
+            (y - shape.y) ** 2
+          );
+
+        if (
+          distance <= shape.radius
+        ) {
+          return shape;
+        }
+
+        break;
+    }
+  }
+
+  return null;
+};
+
   const handleMouseDown = (
     e: React.MouseEvent<HTMLCanvasElement>
   ) => {
-    if (
-      selectedTool === "select"
-    )
-      return;
+if (
+  selectedTool ===
+  "eraser"
+) {
+  const rect =
+    e.currentTarget.getBoundingClientRect();
+
+  const x =
+    e.clientX - rect.left;
+
+  const y =
+    e.clientY - rect.top;
+
+  const shape =
+    findShapeAtPoint(
+      x,
+      y
+    );
+
+  if (shape) {
+    setShapes((prev) =>
+      prev.filter(
+        (s) =>
+          s.id !== shape.id
+      )
+    );
+  }
+
+  return;
+}
+
+if (
+  selectedTool === "select"
+) {
+  const rect =
+    e.currentTarget.getBoundingClientRect();
+
+  const x =
+    e.clientX - rect.left;
+
+  const y =
+    e.clientY - rect.top;
+
+  const clickedShape =
+    findShapeAtPoint(
+      x,
+      y
+    );
+
+  if (clickedShape) {
+    setSelectedShapeId(
+      clickedShape.id
+    );
+
+    setIsDraggingShape(true);
+  }
+
+  return;
+}
 
     const rect =
       e.currentTarget.getBoundingClientRect();
@@ -337,6 +444,44 @@ export const Canvas = ({
 
     const currentY =
       e.clientY - rect.top;
+
+if (
+  selectedTool ===
+    "select" &&
+  isDraggingShape &&
+  selectedShapeId
+) {
+  setShapes((prev) =>
+    prev.map((shape) => {
+      if (
+        shape.id !==
+        selectedShapeId
+      )
+        return shape;
+
+      switch (shape.type) {
+        case "rectangle":
+          return {
+            ...shape,
+            x: currentX,
+            y: currentY,
+          };
+
+        case "circle":
+          return {
+            ...shape,
+            x: currentX,
+            y: currentY,
+          };
+
+        default:
+          return shape;
+      }
+    })
+  );
+
+  return;
+}
 
     if (
       selectedTool ===
@@ -428,6 +573,7 @@ export const Canvas = ({
   };
 
   const handleMouseUp = () => {
+    setIsDraggingShape(false);
     if (!isDrawing) return;
 
   if (selectedTool === "pencil") {
