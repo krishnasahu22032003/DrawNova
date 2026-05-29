@@ -18,18 +18,19 @@ import { ToggleTheme } from "./theme-toogle";
 import UpdateProfileModal from "./modals/UpdateProfileModal";
 import UserSignOut from "../lib/signout";
 import { toast } from "sonner";
+import GetUserDetails from "../lib/getUserdetails";
 
 export default function DashboardHeader() {
   const [open, setOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
-    const [createRoomOpen, setCreateRoomOpen] =
-  useState(false);
+  const [createRoomOpen, setCreateRoomOpen] =
+    useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef =
     useRef<HTMLDivElement>(null);
-
+  const [username, setUsername] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -58,6 +59,15 @@ export default function DashboardHeader() {
       );
     };
   }, []);
+
+  useEffect(() => {
+
+    setLoading(true);
+
+    const res = GetUserDetails().then((resolve) => { setUsername(resolve.data.username); setLoading(false) });
+
+  }, []);
+
 
   async function handleSignout() {
 
@@ -147,7 +157,7 @@ export default function DashboardHeader() {
 
           <div className="hidden items-center gap-3 md:flex">
             <button
-              onClick={()=>setCreateRoomOpen(true)}
+              onClick={() => setCreateRoomOpen(true)}
               className="
                 group
                 flex
@@ -287,6 +297,40 @@ export default function DashboardHeader() {
                       backdrop-blur-2xl
                     "
                   >
+                    <div
+                      className="
+    mb-2
+    rounded-xl
+    border
+    border-border/70
+    bg-background-secondary/50
+    px-4
+    py-3
+  "
+                    >
+                      <p
+                        className="
+      text-xs
+      uppercase
+      tracking-wider
+      text-foreground-secondary
+    "
+                      >
+                        Welcome Back
+                      </p>
+
+                      <p
+                        className="
+      mt-1
+      truncate
+      text-sm
+      font-semibold
+      text-foreground
+    "
+                      >
+                        👋 Hey, {loading ? "Loading..." : username}
+                      </p>
+                    </div>
                     <button
                       onClick={() => {
                         setOpen(false);
@@ -316,9 +360,9 @@ export default function DashboardHeader() {
                     <button
                       disabled={loading}
                       onClick={() => {
-  setOpen(false);
-  handleSignout();
-}}
+                        setOpen(false);
+                        handleSignout();
+                      }}
                       className="
                         flex
                         w-full
@@ -439,7 +483,7 @@ export default function DashboardHeader() {
   "
               >
                 <button
-                  onClick={() =>{
+                  onClick={() => {
                     setMobileMenuOpen(false)
                     setCreateRoomOpen(true)
                   }}
@@ -463,7 +507,40 @@ export default function DashboardHeader() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
+              <div
+                className="
+    mb-2
+    rounded-xl
+    border
+    border-border/70
+    bg-background-secondary/50
+    px-4
+    py-3
+  "
+              >
+                <p
+                  className="
+      text-xs
+      uppercase
+      tracking-wider
+      text-foreground-secondary
+    "
+                >
+                  Welcome Back
+                </p>
 
+                <p
+                  className="
+      mt-1
+      truncate
+      text-sm
+      font-semibold
+      text-foreground
+    "
+                >
+                  👋 Hey, {loading ? "Loading..." : username}
+                </p>
+              </div>
               <div className="flex flex-col gap-3">
                 <button
                   className="
@@ -562,7 +639,7 @@ export default function DashboardHeader() {
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-  setProfileModalOpen(true);
+                    setProfileModalOpen(true);
                   }}
                   className="
                     flex
@@ -622,7 +699,7 @@ export default function DashboardHeader() {
         )}
       </AnimatePresence>
       <UpdateProfileModal open={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
-        <CreateRoomModal open={createRoomOpen} onClose={()=>setCreateRoomOpen(false)}/>
+      <CreateRoomModal open={createRoomOpen} onClose={() => setCreateRoomOpen(false)} />
     </>
   );
 }
