@@ -40,6 +40,11 @@ const [isDraggingShape, setIsDraggingShape] =
 
   const startX = useRef(0);
   const startY = useRef(0);
+  const dragOffset =
+  useRef({
+    x: 0,
+    y: 0,
+  });
 
   const previewShape =
     useRef<Shape | null>(null);
@@ -284,7 +289,7 @@ const [isDraggingShape, setIsDraggingShape] =
       }
 
        
-    }, [shapes]);
+    }, [shapes, selectedShapeId,]);
 
   useEffect(() => {
     const observer =
@@ -338,6 +343,55 @@ const [isDraggingShape, setIsDraggingShape] =
     drawCanvas();
   }, [drawCanvas]);
 
+const distanceToLine = (
+  px: number,
+  py: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+) => {
+  const A = px - x1;
+  const B = py - y1;
+
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const dot =
+    A * C + B * D;
+
+  const lenSq =
+    C * C + D * D;
+
+  const param =
+    lenSq !== 0
+      ? dot / lenSq
+      : -1;
+
+  let xx;
+  let yy;
+
+  if (param < 0) {
+    xx = x1;
+    yy = y1;
+  } else if (param > 1) {
+    xx = x2;
+    yy = y2;
+  } else {
+    xx =
+      x1 + param * C;
+    yy =
+      y1 + param * D;
+  }
+
+  const dx = px - xx;
+  const dy = py - yy;
+
+  return Math.sqrt(
+    dx * dx + dy * dy
+  );
+};
+
   const findShapeAtPoint = (
   x: number,
   y: number
@@ -377,6 +431,66 @@ const [isDraggingShape, setIsDraggingShape] =
         }
 
         break;
+
+        case "line": {
+  const distance =
+    distanceToLine(
+      x,
+      y,
+      shape.startX,
+      shape.startY,
+      shape.endX,
+      shape.endY
+    );
+
+  if (distance < 8)
+    return shape;
+
+  break;
+}
+
+case "arrow": {
+  const distance =
+    distanceToLine(
+      x,
+      y,
+      shape.startX,
+      shape.startY,
+      shape.endX,
+      shape.endY
+    );
+
+  if (distance < 8)
+    return shape;
+
+  break;
+}
+
+case "text":
+  if (
+    x >= shape.x &&
+    x <= shape.x + 150 &&
+    y >= shape.y - 24 &&
+    y <= shape.y + 10
+  ) {
+    return shape;
+  }
+  break;
+
+  case "pencil":
+  for (
+    const point of shape.points
+  ) {
+    const distance =
+      Math.sqrt(
+        (x - point.x) ** 2 +
+        (y - point.y) ** 2
+      );
+
+    if (distance < 8)
+      return shape;
+  }
+  break;
     }
   }
 
@@ -470,13 +584,77 @@ if (
       y
     );
 
-  if (clickedShape) {
-    setSelectedShapeId(
-      clickedShape.id
-    );
+if (clickedShape) {
 
-    setIsDraggingShape(true);
+  setSelectedShapeId(
+    clickedShape.id
+  );
+
+  if (
+  "x" in clickedShape &&
+  "y" in clickedShape
+) {
+  dragOffset.current = {
+    x:
+      x -
+      clickedShape.x,
+    y:
+      y -
+      clickedShape.y,
+  };
+}
+
+if (
+  clickedShape.type ===
+  "line" ||
+  clickedShape.type ===
+  "arrow"
+) {
+  dragOffset.current = {
+    x:
+      x -
+      clickedShape.startX,
+    y:
+      y -
+      clickedShape.startY,
+  };
+}
+
+if (
+  clickedShape.type ===
+  "line" ||
+  clickedShape.type ===
+  "arrow"
+) {
+  dragOffset.current = {
+    x:
+      x -
+      clickedShape.startX,
+    y:
+      y -
+      clickedShape.startY,
+  };
+}
+
+if (
+  clickedShape.type ===
+  "pencil"
+) {
+  const first =
+    clickedShape.points[0];
+
+  if (first) {
+    dragOffset.current = {
+      x:
+        x - first.x,
+      y:
+        y - first.y,
+    };
   }
+}
+
+  setIsDraggingShape(true);
+}
 
   return;
 }
@@ -511,7 +689,11 @@ if (
   const handleMouseMove = (
     e: React.MouseEvent<HTMLCanvasElement>
   ) => {
-    if (!isDrawing) return;
+    if (
+  !isDrawing &&
+  !isDraggingShape
+)
+  return;
 
     const rect =
       e.currentTarget.getBoundingClientRect();
@@ -537,24 +719,118 @@ if (
         return shape;
 
       switch (shape.type) {
-        case "rectangle":
-          return {
-            ...shape,
-            x: currentX,
-            y: currentY,
-          };
+    case "rectangle":
+  return {
+    ...shape,
+    x:
+      currentX -
+      dragOffset.current.x,
+    y:
+      currentY -
+      dragOffset.current.y,
+  };
 
-        case "circle":
-          return {
-            ...shape,
-            x: currentX,
-            y: currentY,
-          };
+case "circle":
+  return {
+    ...shape,
+    x:
+      currentX -
+      dragOffset.current.x,
+    y:
+      currentY -
+      dragOffset.current.y,
+  };
+
+  case "line":
+  return {
+    ...shape,
+    startX:
+      currentX -
+      dragOffset.current.x,
+    startY:
+      currentY -
+      dragOffset.current.y,
+    endX:
+      currentX -
+      dragOffset.current.x +
+      (shape.endX -
+        shape.startX),
+    endY:
+      currentY -
+      dragOffset.current.y +
+      (shape.endY -
+        shape.startY),
+  };
+
+  case "arrow":
+  return {
+    ...shape,
+    startX:
+      currentX -
+      dragOffset.current.x,
+    startY:
+      currentY -
+      dragOffset.current.y,
+    endX:
+      currentX -
+      dragOffset.current.x +
+      (shape.endX -
+        shape.startX),
+    endY:
+      currentY -
+      dragOffset.current.y +
+      (shape.endY -
+        shape.startY),
+  };
+
+  case "text":
+  return {
+    ...shape,
+    x:
+      currentX -
+      dragOffset.current.x,
+    y:
+      currentY -
+      dragOffset.current.y,
+  };
+
+  case "pencil": {
+  const first =
+    shape.points[0];
+
+  if (!first)
+    return shape;
+
+  const dx =
+    currentX -
+    dragOffset.current.x -
+    first.x;
+
+  const dy =
+    currentY -
+    dragOffset.current.y -
+    first.y;
+
+  return {
+    ...shape,
+    points:
+      shape.points.map(
+        (point) => ({
+          x:
+            point.x + dx,
+          y:
+            point.y + dy,
+        })
+      ),
+  };
+}
 
         default:
           return shape;
       }
     })
+
+    
   );
 
   return;
@@ -651,7 +927,11 @@ if (
 
   const handleMouseUp = () => {
     setIsDraggingShape(false);
-    if (!isDrawing) return;
+   if (
+  !isDrawing &&
+  !isDraggingShape
+)
+  return;
 
   if (selectedTool === "pencil") {
   const pencil =
