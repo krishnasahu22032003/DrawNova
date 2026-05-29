@@ -19,6 +19,7 @@ import UpdateProfileModal from "./modals/UpdateProfileModal";
 import UserSignOut from "../lib/signout";
 import { toast } from "sonner";
 import GetUserDetails from "../lib/getUserdetails";
+import JoinRoomModal from "./modals/JoinRoomModal";
 
 export default function DashboardHeader() {
   const [open, setOpen] = useState(false);
@@ -32,6 +33,8 @@ export default function DashboardHeader() {
     useRef<HTMLDivElement>(null);
   const [username, setUsername] = useState("");
   const router = useRouter();
+const [joinroom, setJoinroom] =
+  useState(false);
 
   useEffect(() => {
     const handleOutsideClick = (
@@ -194,6 +197,7 @@ export default function DashboardHeader() {
             </button>
 
             <button
+             onClick={()=>setJoinroom(true)}
               className="
                 group
                 flex
@@ -576,7 +580,12 @@ export default function DashboardHeader() {
                 </button>
 
                 <button
+                onClick={()=>{
+                  setMobileMenuOpen(false)
+                  setJoinroom(true) 
+                  }}
                   className="
+                  
                     group
                     flex
                     items-center
@@ -700,6 +709,7 @@ export default function DashboardHeader() {
       </AnimatePresence>
       <UpdateProfileModal open={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
       <CreateRoomModal open={createRoomOpen} onClose={() => setCreateRoomOpen(false)} />
+        <JoinRoomModal open={joinroom} onClose={()=>setJoinroom(false)}/>
     </>
   );
 }
