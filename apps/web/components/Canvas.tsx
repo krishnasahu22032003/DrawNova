@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Tool } from "../types/ToolTypes";
-
 import {
   Shape,
   RectangleShape,
@@ -22,837 +15,384 @@ interface CanvasProps {
   selectedTool: Tool;
 }
 
-export const Canvas = ({
-  selectedTool,
-}: CanvasProps) => {
-  const canvasRef =
-    useRef<HTMLCanvasElement>(null);
+export const Canvas = ({ selectedTool }: CanvasProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [shapes, setShapes] = useState<Shape[]>([]);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStart = useRef({ x: 0, y: 0 });
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  const [isDraggingShape, setIsDraggingShape] = useState(false);
 
-  const [shapes, setShapes] =
-    useState<Shape[]>([]);
+  // Keep refs in sync so callbacks always have latest values without stale closures
+  const zoomRef = useRef(zoom);
+  const offsetRef = useRef(offset);
+  const shapesRef = useRef(shapes);
+  const selectedShapeIdRef = useRef(selectedShapeId);
 
-  const [isDrawing, setIsDrawing] =
-    useState(false);
-  const [selectedShapeId, setSelectedShapeId] =
-  useState<string | null>(null);
-const [isDraggingShape, setIsDraggingShape] =
-  useState(false);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  useEffect(() => { offsetRef.current = offset; }, [offset]);
+  useEffect(() => { shapesRef.current = shapes; }, [shapes]);
+  useEffect(() => { selectedShapeIdRef.current = selectedShapeId; }, [selectedShapeId]);
 
   const startX = useRef(0);
   const startY = useRef(0);
-  const dragOffset =
-  useRef({
-    x: 0,
-    y: 0,
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const previewShape = useRef<Shape | null>(null);
+  const currentPencil = useRef<PencilShape | null>(null);
+
+  // ------- wheel zoom -------
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoom((prev) =>
+        e.deltaY < 0 ? Math.min(prev + 0.1, 5) : Math.max(prev - 0.1, 0.2)
+      );
+    };
+
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  // ------- helpers -------
+  /** Convert a raw canvas-relative pixel to world coordinates */
+  const toWorld = (px: number, py: number) => ({
+    x: (px - offsetRef.current.x) / zoomRef.current,
+    y: (py - offsetRef.current.y) / zoomRef.current,
   });
 
-  const previewShape =
-    useRef<Shape | null>(null);
-
-  const currentPencil =
-    useRef<PencilShape | null>(null);
-
-  const drawShape = (
-    ctx: CanvasRenderingContext2D,
-    shape: Shape
+  const distanceToLine = (
+    px: number, py: number,
+    x1: number, y1: number,
+    x2: number, y2: number
   ) => {
-      if (!shape) return;
-    switch (shape.type) {
+    const A = px - x1, B = py - y1;
+    const C = x2 - x1, D = y2 - y1;
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    const param = lenSq !== 0 ? dot / lenSq : -1;
+    const xx = param < 0 ? x1 : param > 1 ? x2 : x1 + param * C;
+    const yy = param < 0 ? y1 : param > 1 ? y2 : y1 + param * D;
+    return Math.sqrt((px - xx) ** 2 + (py - yy) ** 2);
+  };
+
+  const findShapeAtPoint = (x: number, y: number): Shape | null => {
+    for (let i = shapesRef.current.length - 1; i >= 0; i--) {
+      const shape = shapesRef.current[i];
+      if (!shape) continue;
+
+      switch (shape.type) {
+        case "rectangle":
+          if (x >= shape.x && x <= shape.x + shape.width &&
+              y >= shape.y && y <= shape.y + shape.height)
+            return shape;
+          break;
+
+        case "circle":
+          if (Math.sqrt((x - shape.x) ** 2 + (y - shape.y) ** 2) <= shape.radius)
+            return shape;
+          break;
+
+        case "line":
+        case "arrow":
+          if (distanceToLine(x, y, shape.startX, shape.startY, shape.endX, shape.endY) < 8)
+            return shape;
+          break;
 
         case "text":
-  ctx.font =
-    "20px Inter";
+          if (x >= shape.x && x <= shape.x + 150 && y >= shape.y - 24 && y <= shape.y + 10)
+            return shape;
+          break;
 
-  ctx.fillStyle =
-    ctx.strokeStyle;
+        case "pencil":
+          for (const point of shape.points) {
+            if (Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2) < 8)
+              return shape;
+          }
+          break;
+      }
+    }
+    return null;
+  };
 
-  ctx.fillText(
-    shape.text,
-    shape.x,
-    shape.y
-  );
+  // ------- draw -------
+  const drawShape = (ctx: CanvasRenderingContext2D, shape: Shape) => {
+    if (!shape) return;
 
-  break;
+    switch (shape.type) {
+      case "text":
+        ctx.font = "20px Inter";
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fillText(shape.text, shape.x, shape.y);
+        break;
 
       case "rectangle":
-        ctx.strokeRect(
-          shape.x,
-          shape.y,
-          shape.width,
-          shape.height
-        );
+        ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
         break;
 
       case "circle":
         ctx.beginPath();
-        ctx.arc(
-          shape.x,
-          shape.y,
-          shape.radius,
-          0,
-          Math.PI * 2
-        );
+        ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);
         ctx.stroke();
         break;
 
       case "line":
         ctx.beginPath();
-        ctx.moveTo(
-          shape.startX,
-          shape.startY
-        );
-        ctx.lineTo(
-          shape.endX,
-          shape.endY
-        );
+        ctx.moveTo(shape.startX, shape.startY);
+        ctx.lineTo(shape.endX, shape.endY);
         ctx.stroke();
         break;
 
       case "arrow": {
         const headLength = 12;
-
-        const angle = Math.atan2(
-          shape.endY - shape.startY,
-          shape.endX - shape.startX
-        );
-
+        const angle = Math.atan2(shape.endY - shape.startY, shape.endX - shape.startX);
         ctx.beginPath();
-
-        ctx.moveTo(
-          shape.startX,
-          shape.startY
-        );
-
+        ctx.moveTo(shape.startX, shape.startY);
+        ctx.lineTo(shape.endX, shape.endY);
         ctx.lineTo(
-          shape.endX,
-          shape.endY
+          shape.endX - headLength * Math.cos(angle - Math.PI / 6),
+          shape.endY - headLength * Math.sin(angle - Math.PI / 6)
         );
-
+        ctx.moveTo(shape.endX, shape.endY);
         ctx.lineTo(
-          shape.endX -
-            headLength *
-              Math.cos(
-                angle - Math.PI / 6
-              ),
-          shape.endY -
-            headLength *
-              Math.sin(
-                angle - Math.PI / 6
-              )
+          shape.endX - headLength * Math.cos(angle + Math.PI / 6),
+          shape.endY - headLength * Math.sin(angle + Math.PI / 6)
         );
-
-        ctx.moveTo(
-          shape.endX,
-          shape.endY
-        );
-
-        ctx.lineTo(
-          shape.endX -
-            headLength *
-              Math.cos(
-                angle + Math.PI / 6
-              ),
-          shape.endY -
-            headLength *
-              Math.sin(
-                angle + Math.PI / 6
-              )
-        );
-
         ctx.stroke();
         break;
       }
 
       case "pencil": {
-        if (
-          shape.points.length < 2
-        )
-          return;
-
-        const firstPoint =
-          shape.points[0];
-
-        if (!firstPoint) return;
-
+        if (shape.points.length < 2) return;
+        const first = shape.points[0];
+        if (!first) return;
         ctx.beginPath();
-
-        ctx.moveTo(
-          firstPoint.x,
-          firstPoint.y
-        );
-
-        for (
-          let i = 1;
-          i < shape.points.length;
-          i++
-        ) {
-          const point =
-            shape.points[i];
-
-          if (!point)
-            continue;
-
-          ctx.lineTo(
-            point.x,
-            point.y
-          );
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i < shape.points.length; i++) {
+          const point = shape.points[i];
+          if (!point) continue;
+          ctx.lineTo(point.x, point.y);
         }
-
         ctx.stroke();
         break;
       }
     }
   };
 
-  const drawCanvas =
-    useCallback(() => {
-      const canvas =
-        canvasRef.current;
+  const drawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-      if (!canvas) return;
-
-      const ctx =
-        canvas.getContext("2d");
-
-      if (!ctx) return;
-
-      ctx.clearRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-
-      const isDark =
-        document.documentElement.classList.contains(
-          "dark"
-        );
-
-      ctx.strokeStyle = isDark
-        ? "#F8FAFC"
-        : "#111827";
-
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      shapes.forEach((shape) =>{     
-        if (!shape) return;
-        drawShape(ctx, shape)
-     
-        if (
-    shape.id ===
-    selectedShapeId
-  ) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
+    ctx.translate(offsetRef.current.x, offsetRef.current.y);
+    ctx.scale(zoomRef.current, zoomRef.current);
 
-    ctx.strokeStyle =
-      "#5B5CF0";
+    const isDark = document.documentElement.classList.contains("dark");
+    ctx.strokeStyle = isDark ? "#F8FAFC" : "#111827";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 
-    ctx.lineWidth = 2;
+    shapesRef.current.forEach((shape) => {
+      if (!shape) return;
+      drawShape(ctx, shape);
 
-    if (
-      shape.type ===
-      "rectangle"
-    ) {
-      ctx.strokeRect(
-        shape.x - 4,
-        shape.y - 4,
-        shape.width + 8,
-        shape.height + 8
-      );
+      if (shape.id === selectedShapeIdRef.current) {
+        ctx.save();
+        ctx.strokeStyle = "#5B5CF0";
+        ctx.lineWidth = 2;
+        if (shape.type === "rectangle") {
+          ctx.strokeRect(shape.x - 4, shape.y - 4, shape.width + 8, shape.height + 8);
+        }
+        ctx.restore();
+      }
+    });
+
+    if (previewShape.current) {
+      ctx.save();
+      ctx.strokeStyle = "#5B5CF0";
+      drawShape(ctx, previewShape.current);
+      ctx.restore();
+    }
+
+    if (currentPencil.current) {
+      ctx.save();
+      ctx.strokeStyle = "#5B5CF0";
+      drawShape(ctx, currentPencil.current);
+      ctx.restore();
     }
 
     ctx.restore();
-  }
-    }    
-      );
-      
-      if (previewShape.current) {
-        ctx.strokeStyle =
-          "#5B5CF0";
+  // drawCanvas intentionally uses refs so it never goes stale
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-        drawShape(
-          ctx,
-          previewShape.current
-        );
-      }
+  // Re-draw whenever state that affects visuals changes
+  useEffect(() => { drawCanvas(); }, [drawCanvas, shapes, selectedShapeId, zoom, offset]);
 
-      if (currentPencil.current) {
-        ctx.strokeStyle =
-          "#5B5CF0";
-
-        drawShape(
-          ctx,
-          currentPencil.current
-        );
-      }
-
-       
-    }, [shapes, selectedShapeId,]);
-
+  // Dark-mode observer
   useEffect(() => {
-    const observer =
-      new MutationObserver(() => {
-        drawCanvas();
-      });
-
-    observer.observe(
-      document.documentElement,
-      {
-        attributes: true,
-        attributeFilter: ["class"],
-      }
-    );
-
-    return () =>
-      observer.disconnect();
+    const observer = new MutationObserver(() => drawCanvas());
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
   }, [drawCanvas]);
 
+  // Resize
   useEffect(() => {
-    const canvas =
-      canvasRef.current;
-
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
     const resizeCanvas = () => {
-      canvas.width =
-        window.innerWidth;
-
-      canvas.height =
-        window.innerHeight - 78;
-
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight - 78;
       drawCanvas();
     };
 
     resizeCanvas();
-
-    window.addEventListener(
-      "resize",
-      resizeCanvas
-    );
-
-    return () =>
-      window.removeEventListener(
-        "resize",
-        resizeCanvas
-      );
+    window.addEventListener("resize", resizeCanvas);
+    return () => window.removeEventListener("resize", resizeCanvas);
   }, [drawCanvas]);
 
-  useEffect(() => {
-    drawCanvas();
-  }, [drawCanvas]);
+  // ------- mouse events -------
+  const getCanvasXY = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return { px: e.clientX - rect.left, py: e.clientY - rect.top };
+  };
 
-const distanceToLine = (
-  px: number,
-  py: number,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number
-) => {
-  const A = px - x1;
-  const B = py - y1;
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const { px, py } = getCanvasXY(e);
+    const { x, y } = toWorld(px, py);
 
-  const C = x2 - x1;
-  const D = y2 - y1;
-
-  const dot =
-    A * C + B * D;
-
-  const lenSq =
-    C * C + D * D;
-
-  const param =
-    lenSq !== 0
-      ? dot / lenSq
-      : -1;
-
-  let xx;
-  let yy;
-
-  if (param < 0) {
-    xx = x1;
-    yy = y1;
-  } else if (param > 1) {
-    xx = x2;
-    yy = y2;
-  } else {
-    xx =
-      x1 + param * C;
-    yy =
-      y1 + param * D;
-  }
-
-  const dx = px - xx;
-  const dy = py - yy;
-
-  return Math.sqrt(
-    dx * dx + dy * dy
-  );
-};
-
-  const findShapeAtPoint = (
-  x: number,
-  y: number
-): Shape | null => {
-  for (
-    let i = shapes.length - 1;
-    i >= 0;
-    i--
-  ) {
-    const shape = shapes[i];
-
-    if (!shape) continue;
-
-    switch (shape.type) {
-      case "rectangle":
-        if (
-          x >= shape.x &&
-          x <= shape.x + shape.width &&
-          y >= shape.y &&
-          y <= shape.y + shape.height
-        ) {
-          return shape;
-        }
-        break;
-
-      case "circle":
-        const distance =
-          Math.sqrt(
-            (x - shape.x) ** 2 +
-            (y - shape.y) ** 2
-          );
-
-        if (
-          distance <= shape.radius
-        ) {
-          return shape;
-        }
-
-        break;
-
-        case "line": {
-  const distance =
-    distanceToLine(
-      x,
-      y,
-      shape.startX,
-      shape.startY,
-      shape.endX,
-      shape.endY
-    );
-
-  if (distance < 8)
-    return shape;
-
-  break;
-}
-
-case "arrow": {
-  const distance =
-    distanceToLine(
-      x,
-      y,
-      shape.startX,
-      shape.startY,
-      shape.endX,
-      shape.endY
-    );
-
-  if (distance < 8)
-    return shape;
-
-  break;
-}
-
-case "text":
-  if (
-    x >= shape.x &&
-    x <= shape.x + 150 &&
-    y >= shape.y - 24 &&
-    y <= shape.y + 10
-  ) {
-    return shape;
-  }
-  break;
-
-  case "pencil":
-  for (
-    const point of shape.points
-  ) {
-    const distance =
-      Math.sqrt(
-        (x - point.x) ** 2 +
-        (y - point.y) ** 2
-      );
-
-    if (distance < 8)
-      return shape;
-  }
-  break;
+    // ---- text ----
+    if (selectedTool === "text") {
+      const text = prompt("Enter text");
+      if (!text) return;
+      setShapes((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), type: "text", x, y, text },
+      ]);
+      return;
     }
-  }
 
-  return null;
-};
+    // ---- eraser ----
+    if (selectedTool === "eraser") {
+      const shape = findShapeAtPoint(x, y);
+      if (shape) setShapes((prev) => prev.filter((s) => s.id !== shape.id));
+      return;
+    }
 
-  const handleMouseDown = (
-    e: React.MouseEvent<HTMLCanvasElement>
-  ) => {
+    // ---- select ----
+    if (selectedTool === "select") {
+      const clickedShape = findShapeAtPoint(x, y);
 
-    if (
-  selectedTool === "text"
-) {
-  const rect =
-    e.currentTarget.getBoundingClientRect();
+      if (clickedShape) {
+        setSelectedShapeId(clickedShape.id);
 
-  const x =
-    e.clientX - rect.left;
+        // Set drag offset based on shape type
+        if (clickedShape.type === "line" || clickedShape.type === "arrow") {
+          dragOffset.current = { x: x - clickedShape.startX, y: y - clickedShape.startY };
+        } else if (clickedShape.type === "pencil") {
+          const first = clickedShape.points[0];
+          if (first) dragOffset.current = { x: x - first.x, y: y - first.y };
+        } else if ("x" in clickedShape && "y" in clickedShape) {
+          dragOffset.current = { x: x - clickedShape.x, y: y - clickedShape.y };
+        }
 
-  const y =
-    e.clientY - rect.top;
+        setIsDraggingShape(true);
+      } else {
+        // Clicked empty space — deselect and start panning
+        setSelectedShapeId(null);
+        setIsPanning(true);
+        panStart.current = { x: e.clientX, y: e.clientY };
+      }
+      return;
+    }
 
-  const text =
-    prompt(
-      "Enter text"
-    );
+    // ---- drawing tools ----
+    startX.current = x;
+    startY.current = y;
 
-  if (!text) return;
-
-  setShapes((prev) => [
-    ...prev,
-    {
-      id:
-        crypto.randomUUID(),
-      type: "text",
-      x,
-      y,
-      text,
-    },
-  ]);
-
-  return;
-}
-
-if (
-  selectedTool ===
-  "eraser"
-) {
-  const rect =
-    e.currentTarget.getBoundingClientRect();
-
-  const x =
-    e.clientX - rect.left;
-
-  const y =
-    e.clientY - rect.top;
-
-  const shape =
-    findShapeAtPoint(
-      x,
-      y
-    );
-
-  if (shape) {
-    setShapes((prev) =>
-      prev.filter(
-        (s) =>
-          s.id !== shape.id
-      )
-    );
-  }
-
-  return;
-}
-
-if (
-  selectedTool === "select"
-) {
-  const rect =
-    e.currentTarget.getBoundingClientRect();
-
-  const x =
-    e.clientX - rect.left;
-
-  const y =
-    e.clientY - rect.top;
-
-  const clickedShape =
-    findShapeAtPoint(
-      x,
-      y
-    );
-
-if (clickedShape) {
-
-  setSelectedShapeId(
-    clickedShape.id
-  );
-
-  if (
-  "x" in clickedShape &&
-  "y" in clickedShape
-) {
-  dragOffset.current = {
-    x:
-      x -
-      clickedShape.x,
-    y:
-      y -
-      clickedShape.y,
-  };
-}
-
-if (
-  clickedShape.type ===
-  "line" ||
-  clickedShape.type ===
-  "arrow"
-) {
-  dragOffset.current = {
-    x:
-      x -
-      clickedShape.startX,
-    y:
-      y -
-      clickedShape.startY,
-  };
-}
-
-if (
-  clickedShape.type ===
-  "line" ||
-  clickedShape.type ===
-  "arrow"
-) {
-  dragOffset.current = {
-    x:
-      x -
-      clickedShape.startX,
-    y:
-      y -
-      clickedShape.startY,
-  };
-}
-
-if (
-  clickedShape.type ===
-  "pencil"
-) {
-  const first =
-    clickedShape.points[0];
-
-  if (first) {
-    dragOffset.current = {
-      x:
-        x - first.x,
-      y:
-        y - first.y,
-    };
-  }
-}
-
-  setIsDraggingShape(true);
-}
-
-  return;
-}
-
-    const rect =
-      e.currentTarget.getBoundingClientRect();
-
-    startX.current =
-      e.clientX - rect.left;
-
-    startY.current =
-      e.clientY - rect.top;
-
-    if (
-      selectedTool === "pencil"
-    ) {
+    if (selectedTool === "pencil") {
       currentPencil.current = {
         id: crypto.randomUUID(),
         type: "pencil",
-        points: [
-          {
-            x: startX.current,
-            y: startY.current,
-          },
-        ],
+        points: [{ x, y }],
       };
     }
 
     setIsDrawing(true);
   };
 
-  const handleMouseMove = (
-    e: React.MouseEvent<HTMLCanvasElement>
-  ) => {
-    if (
-  !isDrawing &&
-  !isDraggingShape
-)
-  return;
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const { px, py } = getCanvasXY(e);
 
-    const rect =
-      e.currentTarget.getBoundingClientRect();
-
-    const currentX =
-      e.clientX - rect.left;
-
-    const currentY =
-      e.clientY - rect.top;
-
-if (
-  selectedTool ===
-    "select" &&
-  isDraggingShape &&
-  selectedShapeId
-) {
-  setShapes((prev) =>
-    prev.map((shape) => {
-      if (
-        shape.id !==
-        selectedShapeId
-      )
-        return shape;
-
-      switch (shape.type) {
-    case "rectangle":
-  return {
-    ...shape,
-    x:
-      currentX -
-      dragOffset.current.x,
-    y:
-      currentY -
-      dragOffset.current.y,
-  };
-
-case "circle":
-  return {
-    ...shape,
-    x:
-      currentX -
-      dragOffset.current.x,
-    y:
-      currentY -
-      dragOffset.current.y,
-  };
-
-  case "line":
-  return {
-    ...shape,
-    startX:
-      currentX -
-      dragOffset.current.x,
-    startY:
-      currentY -
-      dragOffset.current.y,
-    endX:
-      currentX -
-      dragOffset.current.x +
-      (shape.endX -
-        shape.startX),
-    endY:
-      currentY -
-      dragOffset.current.y +
-      (shape.endY -
-        shape.startY),
-  };
-
-  case "arrow":
-  return {
-    ...shape,
-    startX:
-      currentX -
-      dragOffset.current.x,
-    startY:
-      currentY -
-      dragOffset.current.y,
-    endX:
-      currentX -
-      dragOffset.current.x +
-      (shape.endX -
-        shape.startX),
-    endY:
-      currentY -
-      dragOffset.current.y +
-      (shape.endY -
-        shape.startY),
-  };
-
-  case "text":
-  return {
-    ...shape,
-    x:
-      currentX -
-      dragOffset.current.x,
-    y:
-      currentY -
-      dragOffset.current.y,
-  };
-
-  case "pencil": {
-  const first =
-    shape.points[0];
-
-  if (!first)
-    return shape;
-
-  const dx =
-    currentX -
-    dragOffset.current.x -
-    first.x;
-
-  const dy =
-    currentY -
-    dragOffset.current.y -
-    first.y;
-
-  return {
-    ...shape,
-    points:
-      shape.points.map(
-        (point) => ({
-          x:
-            point.x + dx,
-          y:
-            point.y + dy,
-        })
-      ),
-  };
-}
-
-        default:
-          return shape;
-      }
-    })
-
-    
-  );
-
-  return;
-}
-
-    if (
-      selectedTool ===
-        "pencil" &&
-      currentPencil.current
-    ) {
-      currentPencil.current.points.push(
-        {
-          x: currentX,
-          y: currentY,
-        }
-      );
-
-      drawCanvas();
-
+    // ---- panning ----
+    if (isPanning) {
+      const dx = e.clientX - panStart.current.x;
+      const dy = e.clientY - panStart.current.y;
+      setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+      panStart.current = { x: e.clientX, y: e.clientY };
       return;
     }
 
+    if (!isDrawing && !isDraggingShape) return;
+
+    const { x: currentX, y: currentY } = toWorld(px, py);
+
+    // ---- dragging a shape ----
+    if (selectedTool === "select" && isDraggingShape && selectedShapeIdRef.current) {
+      setShapes((prev) =>
+        prev.map((shape) => {
+          if (shape.id !== selectedShapeIdRef.current) return shape;
+
+          switch (shape.type) {
+            case "rectangle":
+            case "circle":
+            case "text":
+              return { ...shape, x: currentX - dragOffset.current.x, y: currentY - dragOffset.current.y };
+
+            case "line":
+            case "arrow":
+              return {
+                ...shape,
+                startX: currentX - dragOffset.current.x,
+                startY: currentY - dragOffset.current.y,
+                endX: currentX - dragOffset.current.x + (shape.endX - shape.startX),
+                endY: currentY - dragOffset.current.y + (shape.endY - shape.startY),
+              };
+
+            case "pencil": {
+              const first = shape.points[0];
+              if (!first) return shape;
+              const dx = currentX - dragOffset.current.x - first.x;
+              const dy = currentY - dragOffset.current.y - first.y;
+              return { ...shape, points: shape.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
+            }
+
+            default:
+              return shape;
+          }
+        })
+      );
+      return;
+    }
+
+    // ---- pencil drawing ----
+    if (selectedTool === "pencil" && currentPencil.current) {
+      currentPencil.current.points.push({ x: currentX, y: currentY });
+      drawCanvas();
+      return;
+    }
+
+    // ---- shape preview ----
     switch (selectedTool) {
       case "rectangle":
         previewShape.current = {
@@ -860,30 +400,15 @@ case "circle":
           type: "rectangle",
           x: startX.current,
           y: startY.current,
-          width:
-            currentX -
-            startX.current,
-          height:
-            currentY -
-            startY.current,
+          width: currentX - startX.current,
+          height: currentY - startY.current,
         } satisfies RectangleShape;
         break;
 
       case "circle": {
-        const radius =
-          Math.sqrt(
-            Math.pow(
-              currentX -
-                startX.current,
-              2
-            ) +
-              Math.pow(
-                currentY -
-                  startY.current,
-                2
-              )
-          );
-
+        const radius = Math.sqrt(
+          (currentX - startX.current) ** 2 + (currentY - startY.current) ** 2
+        );
         previewShape.current = {
           id: crypto.randomUUID(),
           type: "circle",
@@ -891,7 +416,6 @@ case "circle":
           y: startY.current,
           radius,
         } satisfies CircleShape;
-
         break;
       }
 
@@ -899,10 +423,8 @@ case "circle":
         previewShape.current = {
           id: crypto.randomUUID(),
           type: "line",
-          startX:
-            startX.current,
-          startY:
-            startY.current,
+          startX: startX.current,
+          startY: startY.current,
           endX: currentX,
           endY: currentY,
         } satisfies LineShape;
@@ -912,10 +434,8 @@ case "circle":
         previewShape.current = {
           id: crypto.randomUUID(),
           type: "arrow",
-          startX:
-            startX.current,
-          startY:
-            startY.current,
+          startX: startX.current,
+          startY: startY.current,
           endX: currentX,
           endY: currentY,
         } satisfies ArrowShape;
@@ -926,74 +446,51 @@ case "circle":
   };
 
   const handleMouseUp = () => {
+    // Always reset interaction states first
+    setIsPanning(false);
     setIsDraggingShape(false);
-   if (
-  !isDrawing &&
-  !isDraggingShape
-)
-  return;
 
-  if (selectedTool === "pencil") {
-  const pencil =
-    currentPencil.current;
-
-  if (pencil) {
-    setShapes((prev) => [
-      ...prev,
-      pencil,
-    ]);
-  }
-
-  currentPencil.current = null;
-
-  setIsDrawing(false);
-
-  return;
-}
-
-    const shape =
-      previewShape.current;
-
-    if (!shape) {
+    if (isDrawing) {
+      if (selectedTool === "pencil") {
+        const pencil = currentPencil.current;
+        if (pencil && pencil.points.length >= 2) {
+          setShapes((prev) => [...prev, pencil]);
+        }
+        currentPencil.current = null;
+      } else {
+        const shape = previewShape.current;
+        if (shape) setShapes((prev) => [...prev, shape]);
+        previewShape.current = null;
+      }
       setIsDrawing(false);
-      return;
     }
-    
-setShapes((prev) => [
-  ...prev,
-  shape,
-]);
-
-    previewShape.current =
-      null;
-
-    setIsDrawing(false);
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      onMouseDown={
-        handleMouseDown
-      }
-      onMouseMove={
-        handleMouseMove
-      }
-      onMouseUp={
-        handleMouseUp
-      }
-      onMouseLeave={handleMouseUp}
-      onMouseOut={handleMouseUp}
-      className="
-        fixed
-        left-0
-        right-0
-        bottom-0
-        top-[78px]
-        z-0
-        cursor-crosshair
-        bg-transparent
-      "
-    />
+    <div>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        className="fixed left-0 right-0 bottom-0 top-[78px] z-0 cursor-crosshair bg-transparent"
+      />
+
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-background/90 backdrop-blur-xl">
+        <button
+          onClick={() => setZoom((prev) => Math.min(prev + 0.1, 5))}
+          className="h-12 w-12 text-xl hover:bg-background-secondary"
+        >
+          +
+        </button>
+        <button
+          onClick={() => setZoom((prev) => Math.max(prev - 0.1, 0.2))}
+          className="h-12 w-12 border-t border-border text-xl hover:bg-background-secondary"
+        >
+          −
+        </button>
+      </div>
+    </div>
   );
 };
