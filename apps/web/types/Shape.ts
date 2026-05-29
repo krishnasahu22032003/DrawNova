@@ -2,8 +2,18 @@ export type Shape =
   | RectangleShape
   | CircleShape
   | LineShape
-  |ArrowShape ;
-  
+  |ArrowShape 
+  |PencilShape;
+
+  export interface PencilShape {
+  id: string;
+  type: "pencil";
+  points: {
+    x: number;
+    y: number;
+  }[];
+}
+
 export interface RectangleShape {
   id: string;
   type: "rectangle";
