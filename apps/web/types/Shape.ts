@@ -1,8 +1,9 @@
 export type Shape =
   | RectangleShape
   | CircleShape
-  | LineShape;
-
+  | LineShape
+  |ArrowShape ;
+  
 export interface RectangleShape {
   id: string;
   type: "rectangle";
@@ -23,6 +24,15 @@ export interface CircleShape {
 export interface LineShape {
   id: string;
   type: "line";
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+}
+
+export interface ArrowShape {
+  id: string;
+  type: "arrow";
   startX: number;
   startY: number;
   endX: number;
