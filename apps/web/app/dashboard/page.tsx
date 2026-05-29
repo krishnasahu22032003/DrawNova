@@ -1,14 +1,40 @@
-import React from 'react'
-import DashboardHeader from '../../components/DashboardHeader'
-import { ToolBar } from '../../components/ToolBar'
+"use client";
 
-const page = () => {
+import { useState } from "react";
+
+import DashboardHeader from "../../components/DashboardHeader";
+import { ToolBar } from "../../components/ToolBar";
+import { Canvas } from "../../components/Canvas";
+import { Tool } from "../../types/ToolTypes";
+
+const Page = () => {
+  const [
+    selectedTool,
+    setSelectedTool,
+  ] = useState<Tool>(
+    "select"
+  );
+
   return (
-   <div className="relative h-screen overflow-hidden">
-      <DashboardHeader/>
-      <ToolBar />
-    </div>
-  )
-}
+    <div className="h-screen">
+      <DashboardHeader />
 
-export default page
+      <Canvas
+        selectedTool={
+          selectedTool
+        }
+      />
+
+      <ToolBar
+        selectedTool={
+          selectedTool
+        }
+        setSelectedTool={
+          setSelectedTool
+        }
+      />
+    </div>
+  );
+};
+
+export default Page;

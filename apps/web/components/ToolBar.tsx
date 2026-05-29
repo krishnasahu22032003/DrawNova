@@ -15,6 +15,13 @@ import {
 
 import { Tool } from "../types/ToolTypes";
 
+interface ToolBarProps {
+  selectedTool: Tool;
+  setSelectedTool: React.Dispatch<
+    React.SetStateAction<Tool>
+  >;
+}
+
 const tools: {
   id: Tool;
   label: string;
@@ -71,9 +78,10 @@ const tools: {
   },
 ];
 
-export const ToolBar = () => {
-  const [selectedTool, setSelectedTool] =
-    useState<Tool>("select");
+export const ToolBar = ({
+  selectedTool,
+  setSelectedTool,
+}: ToolBarProps) => {
 
   useEffect(() => {
     const handleKeyDown = (
