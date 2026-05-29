@@ -2,8 +2,17 @@ export type Shape =
   | RectangleShape
   | CircleShape
   | LineShape
-  |ArrowShape 
-  |PencilShape;
+  | ArrowShape
+  | PencilShape
+  | TextShape;
+
+export interface TextShape {
+  id: string;
+  type: "text";
+  x: number;
+  y: number;
+  text: string;
+}
 
   export interface PencilShape {
   id: string;
