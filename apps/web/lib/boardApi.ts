@@ -60,4 +60,9 @@ export async function saveUserBoard(
         }
         throw new Error("Failed to save board");
     }
+};
+
+export async function resetUserBoard(): Promise<BoardData> {
+    const { data } = await api.delete("/api/v1/board/reset/me");
+    return data.data;
 }
