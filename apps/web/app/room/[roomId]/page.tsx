@@ -8,6 +8,7 @@ import { useRoomSync } from "../../../hooks/useRoomSync";
 import { Tool } from "../../../types/ToolTypes";
 import { SyncBadge } from "../../../components/SyncBadge";
 import { Users } from "lucide-react";
+import RoomHeader from "../../../components/RoomHeader";
 
 export default function RoomPage() {
   const params = useParams() ;
@@ -29,6 +30,7 @@ export default function RoomPage() {
 
     return (
         <div className="relative h-screen w-screen overflow-hidden">
+          <RoomHeader/>
             <ToolBar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
 
             <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-background/80 backdrop-blur text-xs text-muted-foreground">
