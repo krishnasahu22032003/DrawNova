@@ -38,3 +38,19 @@ export async function fetchUserBoard(): Promise<BoardData> {
     }
 }
 
+export async function saveUserBoard(
+    elements: any[],
+    appState: AppState
+): Promise<BoardData> {
+    try {
+        const { data } = await api.put("/api/v1/board/update/me", {
+            elements,
+            appState,
+        });
+
+        return data.data;
+    } catch (error) {
+        console.error("Save board error:", error);
+        throw new Error("Failed to save board");
+    }
+}
