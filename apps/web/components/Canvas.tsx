@@ -13,6 +13,16 @@ import {
 
 interface CanvasProps {
   selectedTool: Tool;
+  shapes: Shape[];
+  setShapes: (
+    updater: Shape[] | ((prev: Shape[]) => Shape[]),
+    zoom: number,
+    offset: { x: number; y: number }
+  ) => void;
+  zoom: number;
+  setZoom: (v: number | ((p: number) => number)) => void;
+  offset: { x: number; y: number };
+  setOffset: (v: { x: number; y: number } | ((p: { x: number; y: number }) => { x: number; y: number })) => void;
 }
 
 export const Canvas = ({ selectedTool }: CanvasProps) => {
