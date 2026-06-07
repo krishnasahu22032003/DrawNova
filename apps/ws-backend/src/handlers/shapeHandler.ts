@@ -1,41 +1,73 @@
+import { WebSocket } from "ws";
 import { RoomManager } from "../managers/RoomManager";
-import { DrawShapePayload, UpdateShapePayload, DeleteShapePayload, CursorMovePayload, ClearBoardPayload } from "../types/message";
-import WebSocket from "ws";
+import { prisma } from "@repo/db/client";
 
 const roomManager = RoomManager.getInstance();
 
-export function handleDrawShape(ws: WebSocket, payLoad: DrawShapePayload) {
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-    roomManager.broadcast(payLoad.roomId, {
-        type: "DRAW",
-        payLoad
-    }, ws);
+function debouncedBoardSave(boardId: string, elements: any[]) {
+    if (debounceTimers.has(boardId)) clearTimeout(debounceTimers.get(boardId)!);
+    debounceTimers.set(
+        boardId,
+        setTimeout(async () => {
+            try {
+                await prisma.board.update({
+                    where: { id: boardId },
+                    data: { elements },
+                });
+                console.log("Board saved:", boardId);
+            } catch (err) {
+                console.error("Board save failed:", err);
+            }
+        }, 2000)
+    );
+}
 
-};
+export function handleDrawShape(ws: WebSocket, payload: any) {
+    const { roomId, boardId, shape } = payload;
 
-export function handleUpdateShape(ws: WebSocket, payLoad: UpdateShapePayload) {
+    roomManager.broadcast(
+        roomId,
+        { type: "DRAW", payLoad: { shape } },
+        ws
+    );
 
-    roomManager.broadcast(payLoad.roomId, {
-        type: "UPDATE_SHAPE",
-        payLoad
-    }, ws);
+    debouncedBoardSave(boardId, payload.elements);
+}
 
-};
+export function handleUpdateShape(ws: WebSocket, payload: any) {
+    const { roomId, boardId } = payload;
 
-export function handleDeleteShape(ws: WebSocket, payLoad: DeleteShapePayload) {
+    roomManager.broadcast(
+        roomId,
+        { type: "UPDATE_SHAPE", payLoad: payload },
+        ws
+    );
 
-    roomManager.broadcast(payLoad.roomId, {
-        type: "DELETE_SHAPE",
-        payLoad
-    }, ws);
-};
+    debouncedBoardSave(boardId, payload.elements);
+}
 
-export function handleClearBoard(
-    ws: WebSocket,
-    payload: ClearBoardPayload
-) {
-    roomManager.broadcast(payload.roomId, {
-        type: "CLEAR_BOARD",
-        payload
-    }, ws);
-};
+export function handleDeleteShape(ws: WebSocket, payload: any) {
+    const { roomId, boardId } = payload;
+
+    roomManager.broadcast(
+        roomId,
+        { type: "DELETE_SHAPE", payLoad: payload },
+        ws
+    );
+
+    debouncedBoardSave(boardId, payload.elements);
+}
+
+export function handleClearBoard(ws: WebSocket, payload: any) {
+    const { roomId, boardId } = payload;
+
+    roomManager.broadcast(
+        roomId,
+        { type: "CLEAR_BOARD", payLoad: payload },
+        ws
+    );
+
+    debouncedBoardSave(boardId, []);
+}
