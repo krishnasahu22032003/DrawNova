@@ -49,8 +49,15 @@ export async function saveUserBoard(
         });
 
         return data.data;
-    } catch (error) {
-        console.error("Save board error:", error);
+    } catch (error : any) {
+        console.error("Save board error:", error.response?.data);
+       if (axios.isAxiosError(error)) {
+            console.error("Save board error:", {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message,
+            });
+        }
         throw new Error("Failed to save board");
     }
 }
