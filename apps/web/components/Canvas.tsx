@@ -536,13 +536,13 @@ export const Canvas = ({
       <div className="fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-background/90 backdrop-blur-xl">
         <button
           onClick={() => setZoom((prev) => Math.min(prev + 0.1, 5))}
-          className="h-12 w-12 text-xl hover:bg-background-secondary"
+          className="h-12 cursor-pointer w-12 text-xl hover:bg-background-secondary"
         >
           +
         </button>
         <button
           onClick={() => setZoom((prev) => Math.max(prev - 0.1, 0.2))}
-          className="h-12 w-12 border-t border-border text-xl hover:bg-background-secondary"
+          className="h-12 cursor-pointer w-12 border-t border-border text-xl hover:bg-background-secondary"
         >
           −
         </button>

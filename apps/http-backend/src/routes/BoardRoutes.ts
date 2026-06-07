@@ -10,6 +10,6 @@ BoardRouter.get("/get/me", GetUserBoard) ; //
 BoardRouter.get("/get/:boardId", getBoardById) ; 
 BoardRouter.patch("/update/:boardId",updateBoardById);
 BoardRouter.put("/update/me", UpdateUserBoard) ; //
-BoardRouter.delete("/reset/me", ResetUserBoard) ; 
+BoardRouter.delete("/reset/me", ResetUserBoard) ; //
 
 export default BoardRouter ; 

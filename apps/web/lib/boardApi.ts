@@ -65,4 +65,9 @@ export async function saveUserBoard(
 export async function resetUserBoard(): Promise<BoardData> {
     const { data } = await api.delete("/api/v1/board/reset/me");
     return data.data;
+} ;
+
+export async function fetchBoardById(boardId: string): Promise<BoardData> {
+    const { data } = await api.get(`/api/v1/board/get/${boardId}`);
+    return data.data;
 }
