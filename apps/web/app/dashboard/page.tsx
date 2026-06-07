@@ -131,6 +131,7 @@ export default function DashboardPage() {
     offset,
     setOffset,
     syncState,
+    resetBoard
   } = useBoardSync();
 
   return (
@@ -153,6 +154,7 @@ export default function DashboardPage() {
           setZoom={setZoom}
           offset={offset}
           setOffset={setOffset}
+          resetBoard={resetBoard}
         />
       )}
     </div>

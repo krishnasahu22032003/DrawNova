@@ -10,6 +10,8 @@ import {
   ArrowShape,
   PencilShape,
 } from "../types/Shape";
+import { Trash2 } from "lucide-react";
+import { Button } from "./Button";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 // shapes / zoom / offset are now OWNED by useBoardSync (parent).
@@ -27,6 +29,7 @@ interface CanvasProps {
   setZoom: React.Dispatch<React.SetStateAction<number>>;
   offset: { x: number; y: number };
   setOffset: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+    resetBoard: () => Promise<void>;
 }
 
 export const Canvas = ({
@@ -37,6 +40,7 @@ export const Canvas = ({
   setZoom,
   offset,
   setOffset,
+  resetBoard
 }: CanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -543,6 +547,19 @@ export const Canvas = ({
           −
         </button>
       </div>
+
+      <div className="fixed top-[94px] right-6 z-50 rounded-2xl border border-border bg-background/90 backdrop-blur-xl">
+  <Button
+    onClick={async () => {
+      if (!confirm("Reset board? This will delete all shapes permanently.")) return;
+      await resetBoard();
+    }}
+    className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-background/80 backdrop-blur-md text-xs font-medium text-muted-foreground hover:text-red-400 hover:border-red-400/40 hover:bg-red-500/10 transition-all duration-200"
+  >
+    <Trash2 size={13} strokeWidth={2.2} />
+    Reset
+  </Button>
+</div>
     </div>
   );
 };
