@@ -22,7 +22,7 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     }
 
     try {
-        const decoded = jwt.verify(token, ENV.JWT_SECRET) as { userId: string };
+        const decoded = jwt.verify(token, ENV.JWT_SECRET) as unknown as { userId: string };
         (ws as any).userId = decoded.userId;
     } catch {
         ws.close(1008, "Invalid token");
