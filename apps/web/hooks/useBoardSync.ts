@@ -75,43 +75,42 @@ export function useBoardSync() {
     loadBoard();
   }, []);
 
-  // ---- 2. Whenever shapes change (after initial load): persist ----
   const persistShapes = useCallback(
-    (newShapes: Shape[], currentZoom: number, currentOffset: { x: number; y: number }) => {
-      if (!boardLoadedRef.current) return; // don't fire during hydration
+  (newShapes: Shape[], currentZoom: number, currentOffset: { x: number; y: number }) => {
+    if (!boardLoadedRef.current) {
+      return;
+    }
 
-      // A. Immediately write to localStorage
-      localStorage.setItem(LS_KEY, JSON.stringify(newShapes));
+   
+    localStorage.setItem(LS_KEY, JSON.stringify(newShapes));
 
-      // B. Debounce the DB write
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    setSyncState((prev) => ({ ...prev, status: "saving" }));
 
-      setSyncState((prev) => ({ ...prev, status: "saving" }));
-
-      debounceTimer.current = setTimeout(async () => {
-        try {
-          await saveUserBoard(newShapes, {
-            zoom: currentZoom,
-            scrollX: currentOffset.x,
-            scrollY: currentOffset.y,
-            theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
-          });
-          setSyncState({ status: "saved", lastSaved: new Date() });
-
-          // Reset "saved" badge back to idle after 2s
-          setTimeout(() => {
-            setSyncState((prev) =>
-              prev.status === "saved" ? { ...prev, status: "idle" } : prev
-            );
-          }, 2000);
-        } catch (err) {
-          console.error("DB save failed — data safe in localStorage", err);
-          setSyncState((prev) => ({ ...prev, status: "error" }));
-        }
-      }, DEBOUNCE_MS);
-    },
-    []
-  );
+    debounceTimer.current = setTimeout(async () => {
+   
+      try {
+        const result = await saveUserBoard(newShapes, {
+          zoom: currentZoom,
+          scrollX: currentOffset.x,
+          scrollY: currentOffset.y,
+          theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
+        });
+   
+        setSyncState({ status: "saved", lastSaved: new Date() });
+        setTimeout(() => {
+          setSyncState((prev) =>
+            prev.status === "saved" ? { ...prev, status: "idle" } : prev
+          );
+        }, 2000);
+      } catch (err) {
+        console.error("❌ DB save failed:", err);
+        setSyncState((prev) => ({ ...prev, status: "error" }));
+      }
+    }, DEBOUNCE_MS);
+  },
+  []
+);
 
   // Wrapped setShapes that also triggers sync
   const updateShapes = useCallback(

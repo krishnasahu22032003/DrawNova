@@ -4,8 +4,8 @@ import ENV_SECRETS from "./ENV";
 export interface AppState {
     zoom: number;
     scrollX: number;
-    scrollY: number;
-    theme: string;
+     scrollY: number;
+  theme: "light" | "dark";
 }
 
 export interface BoardData {
