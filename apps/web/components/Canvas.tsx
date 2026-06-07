@@ -11,8 +11,12 @@ import {
   PencilShape,
 } from "../types/Shape";
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+// shapes / zoom / offset are now OWNED by useBoardSync (parent).
+// Canvas only reads + calls the setters.
 interface CanvasProps {
   selectedTool: Tool;
+  // lifted state
   shapes: Shape[];
   setShapes: (
     updater: Shape[] | ((prev: Shape[]) => Shape[]),
@@ -20,23 +24,30 @@ interface CanvasProps {
     offset: { x: number; y: number }
   ) => void;
   zoom: number;
-  setZoom: (v: number | ((p: number) => number)) => void;
+  setZoom: React.Dispatch<React.SetStateAction<number>>;
   offset: { x: number; y: number };
-  setOffset: (v: { x: number; y: number } | ((p: { x: number; y: number }) => { x: number; y: number })) => void;
+  setOffset: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
 }
 
-export const Canvas = ({ selectedTool }: CanvasProps) => {
+export const Canvas = ({
+  selectedTool,
+  shapes,
+  setShapes,
+  zoom,
+  setZoom,
+  offset,
+  setOffset,
+}: CanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [shapes, setShapes] = useState<Shape[]>([]);
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  // ── interaction state (local – no need to persist) ──────────────────────────
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0 });
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [isDraggingShape, setIsDraggingShape] = useState(false);
 
-  // Keep refs in sync so callbacks always have latest values without stale closures
+  // ── refs mirror props so event-handlers never capture stale closures ─────────
   const zoomRef = useRef(zoom);
   const offsetRef = useRef(offset);
   const shapesRef = useRef(shapes);
@@ -47,13 +58,23 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
   useEffect(() => { shapesRef.current = shapes; }, [shapes]);
   useEffect(() => { selectedShapeIdRef.current = selectedShapeId; }, [selectedShapeId]);
 
+  // ── drawing helpers ──────────────────────────────────────────────────────────
   const startX = useRef(0);
   const startY = useRef(0);
   const dragOffset = useRef({ x: 0, y: 0 });
   const previewShape = useRef<Shape | null>(null);
   const currentPencil = useRef<PencilShape | null>(null);
 
-  // ------- wheel zoom -------
+  // ── convenience: call setShapes with current zoom/offset baked in ────────────
+  // This saves us from repeating zoomRef.current / offsetRef.current everywhere.
+  const syncedSetShapes = useCallback(
+    (updater: Shape[] | ((prev: Shape[]) => Shape[])) => {
+      setShapes(updater, zoomRef.current, offsetRef.current);
+    },
+    [setShapes]
+  );
+
+  // ── wheel zoom ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -67,10 +88,9 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, []);
+  }, [setZoom]);
 
-  // ------- helpers -------
-  /** Convert a raw canvas-relative pixel to world coordinates */
+  // ── coordinate helpers ───────────────────────────────────────────────────────
   const toWorld = (px: number, py: number) => ({
     x: (px - offsetRef.current.x) / zoomRef.current,
     y: (py - offsetRef.current.y) / zoomRef.current,
@@ -98,9 +118,10 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
 
       switch (shape.type) {
         case "rectangle":
-          if (x >= shape.x && x <= shape.x + shape.width &&
-              y >= shape.y && y <= shape.y + shape.height)
-            return shape;
+          if (
+            x >= shape.x && x <= shape.x + shape.width &&
+            y >= shape.y && y <= shape.y + shape.height
+          ) return shape;
           break;
 
         case "circle":
@@ -130,7 +151,7 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
     return null;
   };
 
-  // ------- draw -------
+  // ── render helpers ───────────────────────────────────────────────────────────
   const drawShape = (ctx: CanvasRenderingContext2D, shape: Shape) => {
     if (!shape) return;
 
@@ -241,21 +262,23 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
     }
 
     ctx.restore();
-  // drawCanvas intentionally uses refs so it never goes stale
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // intentionally uses refs — never goes stale
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-draw whenever state that affects visuals changes
-  useEffect(() => { drawCanvas(); }, [drawCanvas, shapes, selectedShapeId, zoom, offset]);
+  // re-draw whenever any visual dependency changes (shapes come from props now)
+  useEffect(() => {
+    drawCanvas();
+  }, [drawCanvas, shapes, selectedShapeId, zoom, offset]);
 
-  // Dark-mode observer
+  // dark-mode observer
   useEffect(() => {
     const observer = new MutationObserver(() => drawCanvas());
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
   }, [drawCanvas]);
 
-  // Resize
+  // resize
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -271,7 +294,7 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
     return () => window.removeEventListener("resize", resizeCanvas);
   }, [drawCanvas]);
 
-  // ------- mouse events -------
+  // ── mouse events ─────────────────────────────────────────────────────────────
   const getCanvasXY = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     return { px: e.clientX - rect.left, py: e.clientY - rect.top };
@@ -281,44 +304,44 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
     const { px, py } = getCanvasXY(e);
     const { x, y } = toWorld(px, py);
 
-    // ---- text ----
+    // ── text ────────────────────────────────────────────────────────────────────
     if (selectedTool === "text") {
       const text = prompt("Enter text");
       if (!text) return;
-      setShapes((prev) => [
+      syncedSetShapes((prev) => [
         ...prev,
         { id: crypto.randomUUID(), type: "text", x, y, text },
       ]);
       return;
     }
 
-    // ---- eraser ----
+    // ── eraser ──────────────────────────────────────────────────────────────────
     if (selectedTool === "eraser") {
       const shape = findShapeAtPoint(x, y);
-      if (shape) setShapes((prev) => prev.filter((s) => s.id !== shape.id));
+      if (shape) {
+        syncedSetShapes((prev) => prev.filter((s) => s.id !== shape.id));
+      }
       return;
     }
 
-    // ---- select ----
+    // ── select ──────────────────────────────────────────────────────────────────
     if (selectedTool === "select") {
       const clickedShape = findShapeAtPoint(x, y);
 
       if (clickedShape) {
         setSelectedShapeId(clickedShape.id);
 
-        // Set drag offset based on shape type
         if (clickedShape.type === "line" || clickedShape.type === "arrow") {
           dragOffset.current = { x: x - clickedShape.startX, y: y - clickedShape.startY };
         } else if (clickedShape.type === "pencil") {
           const first = clickedShape.points[0];
           if (first) dragOffset.current = { x: x - first.x, y: y - first.y };
         } else if ("x" in clickedShape && "y" in clickedShape) {
-          dragOffset.current = { x: x - clickedShape.x, y: y - clickedShape.y };
+          dragOffset.current = { x: x - (clickedShape as { x: number; y: number }).x, y: y - (clickedShape as { x: number; y: number }).y };
         }
 
         setIsDraggingShape(true);
       } else {
-        // Clicked empty space — deselect and start panning
         setSelectedShapeId(null);
         setIsPanning(true);
         panStart.current = { x: e.clientX, y: e.clientY };
@@ -326,7 +349,7 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
       return;
     }
 
-    // ---- drawing tools ----
+    // ── drawing tools ────────────────────────────────────────────────────────────
     startX.current = x;
     startY.current = y;
 
@@ -344,7 +367,7 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { px, py } = getCanvasXY(e);
 
-    // ---- panning ----
+    // ── panning ──────────────────────────────────────────────────────────────────
     if (isPanning) {
       const dx = e.clientX - panStart.current.x;
       const dy = e.clientY - panStart.current.y;
@@ -357,52 +380,67 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
 
     const { x: currentX, y: currentY } = toWorld(px, py);
 
-    // ---- dragging a shape ----
+    // ── dragging a shape ─────────────────────────────────────────────────────────
+    // NOTE: drag fires on every mousemove — we only persist to DB on mouseUp
+    // to avoid hammering the debounce. We call the raw prop setShapes here
+    // so intermediate drag positions don't each queue a DB save.
+    // The final position is committed in handleMouseUp via syncedSetShapes.
     if (selectedTool === "select" && isDraggingShape && selectedShapeIdRef.current) {
-      setShapes((prev) =>
-        prev.map((shape) => {
-          if (shape.id !== selectedShapeIdRef.current) return shape;
+      setShapes(
+        (prev) =>
+          prev.map((shape) => {
+            if (shape.id !== selectedShapeIdRef.current) return shape;
 
-          switch (shape.type) {
-            case "rectangle":
-            case "circle":
-            case "text":
-              return { ...shape, x: currentX - dragOffset.current.x, y: currentY - dragOffset.current.y };
+            switch (shape.type) {
+              case "rectangle":
+              case "circle":
+              case "text":
+                return {
+                  ...shape,
+                  x: currentX - dragOffset.current.x,
+                  y: currentY - dragOffset.current.y,
+                };
 
-            case "line":
-            case "arrow":
-              return {
-                ...shape,
-                startX: currentX - dragOffset.current.x,
-                startY: currentY - dragOffset.current.y,
-                endX: currentX - dragOffset.current.x + (shape.endX - shape.startX),
-                endY: currentY - dragOffset.current.y + (shape.endY - shape.startY),
-              };
+              case "line":
+              case "arrow":
+                return {
+                  ...shape,
+                  startX: currentX - dragOffset.current.x,
+                  startY: currentY - dragOffset.current.y,
+                  endX: currentX - dragOffset.current.x + (shape.endX - shape.startX),
+                  endY: currentY - dragOffset.current.y + (shape.endY - shape.startY),
+                };
 
-            case "pencil": {
-              const first = shape.points[0];
-              if (!first) return shape;
-              const dx = currentX - dragOffset.current.x - first.x;
-              const dy = currentY - dragOffset.current.y - first.y;
-              return { ...shape, points: shape.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
+              case "pencil": {
+                const first = shape.points[0];
+                if (!first) return shape;
+                const dx = currentX - dragOffset.current.x - first.x;
+                const dy = currentY - dragOffset.current.y - first.y;
+                return {
+                  ...shape,
+                  points: shape.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
+                };
+              }
+
+              default:
+                return shape;
             }
-
-            default:
-              return shape;
-          }
-        })
+          }),
+        // Pass current zoom/offset so localStorage stays in sync during drag too
+        zoomRef.current,
+        offsetRef.current
       );
       return;
     }
 
-    // ---- pencil drawing ----
+    // ── pencil live drawing ──────────────────────────────────────────────────────
     if (selectedTool === "pencil" && currentPencil.current) {
       currentPencil.current.points.push({ x: currentX, y: currentY });
       drawCanvas();
       return;
     }
 
-    // ---- shape preview ----
+    // ── shape preview (not committed yet, just visual) ───────────────────────────
     switch (selectedTool) {
       case "rectangle":
         previewShape.current = {
@@ -456,7 +494,6 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
   };
 
   const handleMouseUp = () => {
-    // Always reset interaction states first
     setIsPanning(false);
     setIsDraggingShape(false);
 
@@ -464,12 +501,16 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
       if (selectedTool === "pencil") {
         const pencil = currentPencil.current;
         if (pencil && pencil.points.length >= 2) {
-          setShapes((prev) => [...prev, pencil]);
+          // ✅ use syncedSetShapes so this commit triggers localStorage + DB save
+          syncedSetShapes((prev) => [...prev, pencil]);
         }
         currentPencil.current = null;
       } else {
         const shape = previewShape.current;
-        if (shape) setShapes((prev) => [...prev, shape]);
+        if (shape) {
+          // ✅ same — commits shape and queues persistence
+          syncedSetShapes((prev) => [...prev, shape]);
+        }
         previewShape.current = null;
       }
       setIsDrawing(false);
@@ -487,6 +528,7 @@ export const Canvas = ({ selectedTool }: CanvasProps) => {
         className="fixed left-0 right-0 bottom-0 top-[78px] z-0 cursor-crosshair bg-transparent"
       />
 
+      {/* Zoom controls — call prop setZoom directly, no sync needed for zoom UI */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-background/90 backdrop-blur-xl">
         <button
           onClick={() => setZoom((prev) => Math.min(prev + 0.1, 5))}
