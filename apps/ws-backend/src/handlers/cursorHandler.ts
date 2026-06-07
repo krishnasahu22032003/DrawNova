@@ -1,15 +1,14 @@
 import { WebSocket } from "ws";
-import { CursorMovePayload } from "../types/message";
 import { RoomManager } from "../managers/RoomManager";
 
 const roomManager = RoomManager.getInstance();
 
-export function handleCursorMove(
-  ws: WebSocket,
-  payload: CursorMovePayload
-) {
-  roomManager.broadcast(payload.roomId, {
-    type: "CURSOR_MOVE",
-    payload
-  }, ws);
+export function handleCursorMove(ws: WebSocket, payload: any) {
+    const { roomId, x, y } = payload;
+    const userId = (ws as any).userId;
+
+    roomManager.broadcast(roomId, {
+        type: "CURSOR_MOVE",
+        payLoad: { userId, x, y },
+    }, ws);
 }
