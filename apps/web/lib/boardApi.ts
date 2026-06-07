@@ -70,4 +70,16 @@ export async function resetUserBoard(): Promise<BoardData> {
 export async function fetchBoardById(boardId: string): Promise<BoardData> {
     const { data } = await api.get(`/api/v1/board/get/${boardId}`);
     return data.data;
+};
+
+export async function saveBoardById(
+    boardId: string,
+    elements: any[],
+    appState: AppState
+): Promise<BoardData> {
+    const { data } = await api.patch(`/api/v1/board/update/${boardId}`, {
+        elements,
+        appState,
+    });
+    return data.data;
 }
