@@ -120,6 +120,8 @@ removeSocket(ws:Websocket){
   console.log("Socket disconnected and cleaned");
 
 };
-
+getRoomSize(roomId: string): number {
+    return this.rooms.get(roomId)?.size ?? 0;
+}
 
 }
