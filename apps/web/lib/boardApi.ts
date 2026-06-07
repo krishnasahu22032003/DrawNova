@@ -82,4 +82,20 @@ export async function saveBoardById(
         appState,
     });
     return data.data;
+};
+
+export async function createRoom(name: string, maxUsers: number) {
+    const { data } = await api.post("/api/v1/room/create", { name, maxUsers });
+    return data.data;
 }
+
+export async function fetchRoom(roomId: string) {
+    const { data } = await api.get(`/api/v1/room/${roomId}`);
+    return data.data;
+}
+
+export async function fetchUserRooms() {
+    const { data } = await api.get("/api/v1/room/user");
+    return data.data;
+};
+
