@@ -10,7 +10,9 @@ import { SyncBadge } from "../../../components/SyncBadge";
 import { Users } from "lucide-react";
 
 export default function RoomPage() {
-    const { roomId } = useParams<{ roomId: string }>();
+  const params = useParams() ;
+  const roomId = params?.roomId as string;
+
     const [selectedTool, setSelectedTool] = useState<Tool>("select");
 
     const {

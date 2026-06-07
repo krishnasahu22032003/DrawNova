@@ -13,12 +13,14 @@ import {
 import { Trash2 } from "lucide-react";
 import { Button } from "./Button";
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-// shapes / zoom / offset are now OWNED by useBoardSync (parent).
-// Canvas only reads + calls the setters.
+interface RemoteCursor {
+  userId: string;
+  x: number;
+  y: number;
+}
+
 interface CanvasProps {
   selectedTool: Tool;
-  // lifted state
   shapes: Shape[];
   setShapes: (
     updater: Shape[] | ((prev: Shape[]) => Shape[]),
@@ -29,7 +31,9 @@ interface CanvasProps {
   setZoom: React.Dispatch<React.SetStateAction<number>>;
   offset: { x: number; y: number };
   setOffset: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
-    resetBoard: () => Promise<void>;
+  resetBoard: () => Promise<void>;
+  cursors?: RemoteCursor[];
+  sendCursor?: (x: number, y: number) => void;
 }
 
 export const Canvas = ({
@@ -40,7 +44,9 @@ export const Canvas = ({
   setZoom,
   offset,
   setOffset,
-  resetBoard
+  resetBoard,
+   cursors = [],
+  sendCursor,
 }: CanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -370,6 +376,7 @@ export const Canvas = ({
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { px, py } = getCanvasXY(e);
+     sendCursor?.(px, py);
 
     // ── panning ──────────────────────────────────────────────────────────────────
     if (isPanning) {
@@ -531,7 +538,25 @@ export const Canvas = ({
         onMouseLeave={handleMouseUp}
         className="fixed left-0 right-0 bottom-0 top-[78px] z-0 cursor-crosshair bg-transparent"
       />
-
+       {cursors.map((cursor) => (
+  <div
+    key={cursor.userId}
+    className="pointer-events-none fixed z-40 flex items-center gap-1"
+    style={{ left: cursor.x, top: cursor.y, transform: "translate(-2px, -2px)" }}
+  >
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M0 0L0 11L3.5 8.5L5.5 13L7 12.5L5 7.5L9 7.5L0 0Z"
+        fill="#5B5CF0"
+        stroke="white"
+        strokeWidth="1"
+      />
+    </svg>
+    <span className="rounded-full bg-[#5B5CF0] px-1.5 py-0.5 text-[10px] font-medium text-white">
+      {cursor.userId.slice(0, 6)}
+    </span>
+  </div>
+))}
       {/* Zoom controls — call prop setZoom directly, no sync needed for zoom UI */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-background/90 backdrop-blur-xl">
         <button
