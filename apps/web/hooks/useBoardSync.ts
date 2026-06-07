@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchUserBoard , saveUserBoard } from "../lib/boardApi";
+import { fetchUserBoard , saveUserBoard , resetUserBoard} from "../lib/boardApi";
 import { Shape } from "../types/Shape";
 
 const LS_KEY = "board_draft"; // localStorage key
@@ -131,6 +131,23 @@ export function useBoardSync() {
     };
   }, []);
 
+  const resetBoard = useCallback(async () => {
+    setSyncState({ status: "saving", lastSaved: null });
+    try {
+        await resetUserBoard();
+        setShapes([]);
+        localStorage.removeItem(LS_KEY);
+        setSyncState({ status: "saved", lastSaved: new Date() });
+        setTimeout(() => {
+            setSyncState((prev) =>
+                prev.status === "saved" ? { ...prev, status: "idle" } : prev
+            );
+        }, 2000);
+    } catch (err) {
+        setSyncState((prev) => ({ ...prev, status: "error" }));
+    }
+}, []);
+
   return {
     shapes,
     setShapes: updateShapes,   // use this instead of raw setShapes in Canvas
@@ -139,5 +156,6 @@ export function useBoardSync() {
     offset,
     setOffset,
     syncState,
+    resetBoard
   };
 }
