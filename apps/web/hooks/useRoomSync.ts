@@ -50,40 +50,57 @@ export function useRoomSync(roomId: string) {
                 ws.onmessage = async (event) => {
                     const msg = JSON.parse(event.data);
 
-                    if (msg.type === "joined") {
-                        boardIdRef.current = msg.boardId;
-                        setSyncState((prev) => ({ ...prev, memberCount: msg.memberCount }));
-
-                        try {
-                            const board = await fetchBoardById(msg.boardId);
-                            if (board.elements?.length > 0) {
-                                setShapes(board.elements as Shape[]);
-                            }
-                            if (board.appState) {
-                                setZoom(board.appState.zoom ?? 1);
-                                setOffset({ x: board.appState.scrollX ?? 0, y: board.appState.scrollY ?? 0 });
-                            }
-                        } catch {
-                            setSyncState((prev) => ({ ...prev, status: "error" }));
+                    if (msg.type === "JOINED") {
+                        boardIdRef.current = msg.payLoad.boardId;
+                        setShapes(msg.payLoad.elements as Shape[]);
+                        if (msg.payLoad.appState) {
+                            setZoom(msg.payLoad.appState.zoom ?? 1);
+                            setOffset({
+                                x: msg.payLoad.appState.scrollX ?? 0,
+                                y: msg.payLoad.appState.scrollY ?? 0,
+                            });
                         }
-
+                        setSyncState((prev) => ({
+                            ...prev,
+                            status: "idle",
+                            lastSaved: new Date(),
+                            memberCount: msg.payLoad.memberCount,
+                        }));
                         boardLoadedRef.current = true;
-                        setSyncState((prev) => ({ ...prev, status: "idle", lastSaved: new Date() }));
                     }
 
-                    if (msg.type === "shapes_update") {
-                        setShapes(msg.elements as Shape[]);
+                    if (msg.type === "DRAW") {
+                        setShapes((prev) => [...prev, msg.payLoad.shape]);
                     }
 
-                    if (msg.type === "member_joined" || msg.type === "member_left") {
-                        setSyncState((prev) => ({ ...prev, memberCount: msg.memberCount }));
+                    if (msg.type === "UPDATE_SHAPE") {
+                        setShapes((prev) =>
+                            prev.map((s) => s.id === msg.payLoad.shape.id ? msg.payLoad.shape : s)
+                        );
                     }
 
-                    if (msg.type === "cursor_move") {
+                    if (msg.type === "DELETE_SHAPE") {
+                        setShapes((prev) => prev.filter((s) => s.id !== msg.payLoad.shapeId));
+                    }
+
+                    if (msg.type === "CLEAR_BOARD") {
+                        setShapes([]);
+                    }
+
+                    if (msg.type === "MEMBER_JOINED" || msg.type === "MEMBER_LEFT") {
+                        setSyncState((prev) => ({ ...prev, memberCount: msg.payLoad.memberCount }));
+                    }
+
+                    if (msg.type === "CURSOR_MOVE") {
                         setCursors((prev) => {
-                            const others = prev.filter((c) => c.userId !== msg.userId);
-                            return [...others, { userId: msg.userId, x: msg.x, y: msg.y }];
+                            const others = prev.filter((c) => c.userId !== msg.payLoad.userId);
+                            return [...others, { userId: msg.payLoad.userId, x: msg.payLoad.x, y: msg.payLoad.y }];
                         });
+                    }
+
+                    if (msg.type === "ERROR") {
+                        console.error("WS error:", msg.message);
+                        setSyncState((prev) => ({ ...prev, status: "error" }));
                     }
                 };
 
@@ -114,24 +131,15 @@ export function useRoomSync(roomId: string) {
 
                 if (boardLoadedRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
                     setSyncState((s) => ({ ...s, status: "saving" }));
-                    wsRef.current.send(
-                        JSON.stringify({
-                            type: "shapes_update",
-                            roomId,
-                            payload: {
-                                boardId: boardIdRef.current,
-                                elements: next,
-                                appState: {
-                                    zoom: currentZoom,
-                                    scrollX: currentOffset.x,
-                                    scrollY: currentOffset.y,
-                                    theme: document.documentElement.classList.contains("dark")
-                                        ? "dark"
-                                        : "light",
-                                },
-                            },
-                        })
-                    );
+                 wsRef.current.send(JSON.stringify({
+    type: "DRAW",
+    payLoad: {
+        roomId,
+        boardId: boardIdRef.current,
+        shape: next[next.length - 1],
+        elements: next,
+    },
+}));
 
                     setTimeout(() => {
                         setSyncState((s) =>
