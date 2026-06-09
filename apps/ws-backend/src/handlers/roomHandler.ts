@@ -5,13 +5,14 @@ import { prisma } from "@repo/db/client";
 const roomManager = RoomManager.getInstance();
 
 export async function handleJoinRoom(ws: WebSocket, payload: any) {
+    
     const { roomId } = payload;
     const userId = (ws as any).userId;
-
+console.log("JOIN_ROOM REQUEST", roomId, userId);
     const member = await prisma.roomMembers.findUnique({
         where: { roomId_userId: { roomId, userId } },
     });
-
+console.log("MEMBER FOUND", !!member);
     if (!member) {
         ws.send(JSON.stringify({ type: "ERROR", message: "Not a member of this room" }));
         return;
@@ -21,9 +22,9 @@ export async function handleJoinRoom(ws: WebSocket, payload: any) {
         where: { roomId },
         select: { id: true, elements: true, appState: true },
     });
-
+console.log("BOARD FOUND", !!board);
     roomManager.joinRoom(roomId, ws);
-
+console.log("SENDING JOINED");
     ws.send(JSON.stringify({
         type: "JOINED",
         payLoad: {

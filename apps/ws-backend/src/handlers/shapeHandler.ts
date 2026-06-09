@@ -51,6 +51,7 @@ export function handleDrawShape(ws: WebSocket, payload: any) {
 
 export function handleUpdateShape(ws: WebSocket, payload: any) {
     const { roomId, boardId, elements } = payload;
+    console.log("UPDATE PAYLOAD", payload);
 
     if (!roomId || !boardId) {
         sendError(ws, "UPDATE_SHAPE requires roomId and boardId");

@@ -11,14 +11,15 @@ import { Users } from "lucide-react";
 import RoomHeader from "../../../components/RoomHeader";
 
 export default function RoomPage() {
-  const params = useParams() ;
-  const roomId = params?.roomId as string;
+    const params = useParams();
+    const roomId = params?.roomId as string;
 
     const [selectedTool, setSelectedTool] = useState<Tool>("select");
 
     const {
         shapes,
         setShapes,
+        addShape,
         zoom,
         setZoom,
         offset,
@@ -26,11 +27,13 @@ export default function RoomPage() {
         syncState,
         cursors,
         sendCursor,
+        updateShape,
+        deleteShape
     } = useRoomSync(roomId);
 
     return (
         <div className="relative h-screen w-screen overflow-hidden">
-          <RoomHeader roomId={roomId}/>
+            <RoomHeader roomId={roomId} />
             <ToolBar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
 
             <div className="fixed top-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-background/80 backdrop-blur text-xs text-muted-foreground">
@@ -49,9 +52,12 @@ export default function RoomPage() {
                     setZoom={setZoom}
                     offset={offset}
                     setOffset={setOffset}
-                    resetBoard={async () => {}}
+                    resetBoard={async () => { }}
                     cursors={cursors}
                     sendCursor={sendCursor}
+                     addShape={addShape}
+                    updateShape={updateShape}
+                    deleteShape={deleteShape}
                 />
             )}
         </div>

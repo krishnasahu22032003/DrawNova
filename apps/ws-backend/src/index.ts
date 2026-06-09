@@ -52,6 +52,7 @@ console.log("TOKEN:", token);
     console.log("New Client connected", (ws as any).userId);
 
     ws.on("message", (message: Buffer) => {
+          console.log("RAW MESSAGE", message.toString());
         try {
             const data = JSON.parse(message.toString());
             console.log("Received message:", data.type, data.payLoad);

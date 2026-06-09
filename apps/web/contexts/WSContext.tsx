@@ -13,53 +13,37 @@ export function WSProvider({ children }: { children: React.ReactNode }) {
     const wsRef = useRef<WebSocket | null>(null);
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-useEffect(() => {
-    console.log("WSProvider mounted");
 
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-        console.log("Socket already open");
-        return;
-    }
+    useEffect(() => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    console.log("Creating websocket...");
+        const socket = new WebSocket(ENV_SECRETS.WS_URL!);
+        wsRef.current = socket;
 
-    const socket = new WebSocket(ENV_SECRETS.WS_URL!);
+        socket.onopen = () => {
+            console.log("WS connected");
+            setWs(socket);
+            setIsConnected(true);
+        };
 
-       setWs(socket);
+        socket.onclose = (event) => {
+            console.log("WS closed", event.code, event.reason);
+            setIsConnected(false);
+            setWs(null);
+            wsRef.current = null;
+        };
 
-    socket.onopen = () => {
-        console.log("WSProvider connected");
+        socket.onerror = (err) => {
+            console.error("WS error", err);
+        };
 
-        setIsConnected(true);
-     
-    };
-
-    socket.onclose = (event) => {
-        console.log(
-            "WSProvider closed",
-            event.code,
-            event.reason
-        );
-
-        setIsConnected(false);
-        setWs(null);
-        wsRef.current = null;
-    };
-
-    socket.onerror = (err) => {
-        console.log("WSProvider error", err);
-    };
-
-    wsRef.current = socket;
-
-    return () => {
-        console.log("WSProvider cleanup");
-        socket.close();
-    };
-}, []);
+        return () => {
+            socket.close();
+        };
+    }, []);
 
     return (
-        <WSContext.Provider value={{ ws, isConnected }}>  {/* ← was wsRef.current, now ws state */}
+        <WSContext.Provider value={{ ws, isConnected }}>
             {children}
         </WSContext.Provider>
     );

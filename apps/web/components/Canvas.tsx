@@ -34,6 +34,19 @@ interface CanvasProps {
   resetBoard: () => Promise<void>;
   cursors?: RemoteCursor[];
   sendCursor?: (x: number, y: number) => void;
+  updateShape?: (
+  shape: Shape,
+  elements: Shape[]
+) => void;
+deleteShape?: (
+  shapeId: string,
+  elements: Shape[]
+) => void;
+addShape?: (
+  elements: Shape[],
+  zoom: number,
+  offset: { x: number; y: number }
+) => void;
 }
 
 export const Canvas = ({
@@ -45,6 +58,9 @@ export const Canvas = ({
   offset,
   setOffset,
   resetBoard,
+    updateShape,
+  deleteShape,
+  addShape,
    cursors = [],
   sendCursor,
 }: CanvasProps) => {
@@ -56,6 +72,7 @@ export const Canvas = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [isDraggingShape, setIsDraggingShape] = useState(false);
+  const movedShapeRef = useRef<Shape | null>(null);
 
   // ── refs mirror props so event-handlers never capture stale closures ─────────
   const zoomRef = useRef(zoom);
@@ -315,24 +332,62 @@ export const Canvas = ({
     const { x, y } = toWorld(px, py);
 
     // ── text ────────────────────────────────────────────────────────────────────
-    if (selectedTool === "text") {
-      const text = prompt("Enter text");
-      if (!text) return;
-      syncedSetShapes((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), type: "text", x, y, text },
-      ]);
-      return;
-    }
+if (selectedTool === "text") {
+  const text = prompt("Enter text");
+
+  if (!text) return;
+
+  const textShape = {
+    id: crypto.randomUUID(),
+    type: "text" as const,
+    x,
+    y,
+    text,
+  };
+
+  const nextShapes = [
+    ...shapesRef.current,
+    textShape,
+  ];
+
+  setShapes(
+    nextShapes,
+    zoomRef.current,
+    offsetRef.current
+  );
+
+  addShape?.(
+    nextShapes,
+    zoomRef.current,
+    offsetRef.current
+  );
+
+  return;
+}
 
     // ── eraser ──────────────────────────────────────────────────────────────────
-    if (selectedTool === "eraser") {
-      const shape = findShapeAtPoint(x, y);
-      if (shape) {
-        syncedSetShapes((prev) => prev.filter((s) => s.id !== shape.id));
-      }
-      return;
-    }
+if (selectedTool === "eraser") {
+  const clickedShape = findShapeAtPoint(x, y);
+
+  if (!clickedShape) return;
+
+  const nextShapes = shapesRef.current.filter(
+    (s) => s.id !== clickedShape.id
+  );
+
+  setShapes(
+    nextShapes,
+    zoomRef.current,
+    offsetRef.current
+  );
+
+  deleteShape?.(
+    clickedShape.id,
+    nextShapes
+  );
+
+  return;
+}
 
     // ── select ──────────────────────────────────────────────────────────────────
     if (selectedTool === "select") {
@@ -376,7 +431,6 @@ export const Canvas = ({
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { px, py } = getCanvasXY(e);
-     sendCursor?.(px, py);
 
     // ── panning ──────────────────────────────────────────────────────────────────
     if (isPanning) {
@@ -396,53 +450,96 @@ export const Canvas = ({
     // to avoid hammering the debounce. We call the raw prop setShapes here
     // so intermediate drag positions don't each queue a DB save.
     // The final position is committed in handleMouseUp via syncedSetShapes.
-    if (selectedTool === "select" && isDraggingShape && selectedShapeIdRef.current) {
-      setShapes(
-        (prev) =>
-          prev.map((shape) => {
-            if (shape.id !== selectedShapeIdRef.current) return shape;
+  if (
+  selectedTool === "select" &&
+  isDraggingShape &&
+  selectedShapeIdRef.current
+) {
+  setShapes(
+    (prev) =>
+      prev.map((shape) => {
+        if (shape.id !== selectedShapeIdRef.current) {
+          return shape;
+        }
 
-            switch (shape.type) {
-              case "rectangle":
-              case "circle":
-              case "text":
-                return {
-                  ...shape,
-                  x: currentX - dragOffset.current.x,
-                  y: currentY - dragOffset.current.y,
-                };
+        switch (shape.type) {
+          case "rectangle":
+          case "circle":
+          case "text": {
+            const updated = {
+              ...shape,
+              x: currentX - dragOffset.current.x,
+              y: currentY - dragOffset.current.y,
+            };
 
-              case "line":
-              case "arrow":
-                return {
-                  ...shape,
-                  startX: currentX - dragOffset.current.x,
-                  startY: currentY - dragOffset.current.y,
-                  endX: currentX - dragOffset.current.x + (shape.endX - shape.startX),
-                  endY: currentY - dragOffset.current.y + (shape.endY - shape.startY),
-                };
+            movedShapeRef.current = updated;
 
-              case "pencil": {
-                const first = shape.points[0];
-                if (!first) return shape;
-                const dx = currentX - dragOffset.current.x - first.x;
-                const dy = currentY - dragOffset.current.y - first.y;
-                return {
-                  ...shape,
-                  points: shape.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
-                };
-              }
+            return updated;
+          }
 
-              default:
-                return shape;
+          case "line":
+          case "arrow": {
+            const updated = {
+              ...shape,
+              startX:
+                currentX - dragOffset.current.x,
+              startY:
+                currentY - dragOffset.current.y,
+              endX:
+                currentX -
+                dragOffset.current.x +
+                (shape.endX - shape.startX),
+              endY:
+                currentY -
+                dragOffset.current.y +
+                (shape.endY - shape.startY),
+            };
+
+            movedShapeRef.current = updated;
+
+            return updated;
+          }
+
+          case "pencil": {
+            const first = shape.points[0];
+
+            if (!first) {
+              return shape;
             }
-          }),
-        // Pass current zoom/offset so localStorage stays in sync during drag too
-        zoomRef.current,
-        offsetRef.current
-      );
-      return;
-    }
+
+            const dx =
+              currentX -
+              dragOffset.current.x -
+              first.x;
+
+            const dy =
+              currentY -
+              dragOffset.current.y -
+              first.y;
+
+            const updated = {
+              ...shape,
+              points: shape.points.map((p) => ({
+                x: p.x + dx,
+                y: p.y + dy,
+              })),
+            };
+
+            movedShapeRef.current = updated;
+
+            return updated;
+          }
+
+          default:
+            return shape;
+        }
+      }),
+    zoomRef.current,
+    offsetRef.current
+  );
+
+  return;
+}
 
     // ── pencil live drawing ──────────────────────────────────────────────────────
     if (selectedTool === "pencil" && currentPencil.current) {
@@ -505,27 +602,71 @@ export const Canvas = ({
   };
 
   const handleMouseUp = () => {
+    if (
+  selectedTool === "select" &&
+  movedShapeRef.current
+) {
+  updateShape?.(
+    movedShapeRef.current,
+    shapesRef.current
+  );
+
+  movedShapeRef.current = null;
+}
     setIsPanning(false);
     setIsDraggingShape(false);
 
-    if (isDrawing) {
-      if (selectedTool === "pencil") {
-        const pencil = currentPencil.current;
-        if (pencil && pencil.points.length >= 2) {
-          // ✅ use syncedSetShapes so this commit triggers localStorage + DB save
-          syncedSetShapes((prev) => [...prev, pencil]);
-        }
-        currentPencil.current = null;
-      } else {
-        const shape = previewShape.current;
-        if (shape) {
-          // ✅ same — commits shape and queues persistence
-          syncedSetShapes((prev) => [...prev, shape]);
-        }
-        previewShape.current = null;
-      }
-      setIsDrawing(false);
+if (isDrawing) {
+  if (selectedTool === "pencil") {
+    const pencil = currentPencil.current;
+
+    if (pencil && pencil.points.length >= 2) {
+      const nextShapes = [
+        ...shapesRef.current,
+        pencil,
+      ];
+
+      setShapes(
+        nextShapes,
+        zoomRef.current,
+        offsetRef.current
+      );
+
+      addShape?.(
+        nextShapes,
+        zoomRef.current,
+        offsetRef.current
+      );
     }
+
+    currentPencil.current = null;
+  } else {
+    const shape = previewShape.current;
+
+    if (shape) {
+      const nextShapes = [
+        ...shapesRef.current,
+        shape,
+      ];
+
+      setShapes(
+        nextShapes,
+        zoomRef.current,
+        offsetRef.current
+      );
+
+      addShape?.(
+        nextShapes,
+        zoomRef.current,
+        offsetRef.current
+      );
+    }
+
+    previewShape.current = null;
+  }
+
+  setIsDrawing(false);
+}
   };
 
   return (
@@ -538,25 +679,7 @@ export const Canvas = ({
         onMouseLeave={handleMouseUp}
         className="fixed left-0 right-0 bottom-0 top-[78px] z-0 cursor-crosshair bg-transparent"
       />
-       {cursors.map((cursor) => (
-  <div
-    key={cursor.userId}
-    className="pointer-events-none fixed z-40 flex items-center gap-1"
-    style={{ left: cursor.x, top: cursor.y, transform: "translate(-2px, -2px)" }}
-  >
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path
-        d="M0 0L0 11L3.5 8.5L5.5 13L7 12.5L5 7.5L9 7.5L0 0Z"
-        fill="#5B5CF0"
-        stroke="white"
-        strokeWidth="1"
-      />
-    </svg>
-    <span className="rounded-full bg-[#5B5CF0] px-1.5 py-0.5 text-[10px] font-medium text-white">
-      {cursor.userId.slice(0, 6)}
-    </span>
-  </div>
-))}
+
       {/* Zoom controls — call prop setZoom directly, no sync needed for zoom UI */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-background/90 backdrop-blur-xl">
         <button
