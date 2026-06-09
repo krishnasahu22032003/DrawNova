@@ -33,4 +33,10 @@ export async function getRoom(roomId: string): Promise<RoomData> {
     }
 }
 
- 
+export async function leaveRoom(roomId: string): Promise<void> {
+    try {
+        await AxiosInstance.post(`/api/v1/room/${roomId}/leave`);
+    } catch (error: any) {
+        throw new Error(error.response?.data?.message || "Failed to leave room");
+    }
+}
