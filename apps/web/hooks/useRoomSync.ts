@@ -31,12 +31,14 @@ export function useRoomSync(roomId: string) {
 
     const boardIdRef = useRef<string | null>(null);
     const boardLoadedRef = useRef(false);
-
+    const joinedRoomRef = useRef(false);
 useEffect(() => {
     if (!ws) return;
     if (!roomId) return;
     if(!isConnected) return ;
-    
+      if (joinedRoomRef.current) return;
+
+  joinedRoomRef.current = true;
     
     ws.send(
         JSON.stringify({
@@ -109,24 +111,21 @@ useEffect(() => {
 
     ws.addEventListener("message", handleMessage);
 
-    ws.send(
-        JSON.stringify({
-            type: "JOIN_ROOM",
-            payLoad: { roomId },
-        })
-    );
+return () => {
+    joinedRoomRef.current = false;
 
-    return () => {
+    if (ws.readyState === WebSocket.OPEN) {
         ws.send(
             JSON.stringify({
                 type: "LEAVE_ROOM",
                 payLoad: { roomId },
             })
         );
+    }
 
-        ws.removeEventListener("message", handleMessage);
-    };
-}, [ws, roomId]);
+    ws.removeEventListener("message", handleMessage);
+};
+}, [ws, roomId , isConnected]);
 
     const updateShapes = useCallback(
         (

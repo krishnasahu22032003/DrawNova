@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { LogOut, Menu, Trash2, User, X } from "lucide-react";
+import { Copy, LogOut, Menu, Trash2, User, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ToggleTheme } from "./theme-toogle";
 import { toast } from "sonner";
@@ -37,23 +37,28 @@ export default function RoomHeader({ roomId }: RoomHeaderProps) {
     }
   }, [roomId]);
 
-const handleDeleteRoom = async () => {
-  if (loading) return;
+  const handleCopyRoomId = async () => {
+    await navigator.clipboard.writeText(roomId);
+    toast.success("Room ID copied");
+  };
 
-  try {
-    setLoading(true);
+  const handleDeleteRoom = async () => {
+    if (loading) return;
 
-    await deleteRoom(roomId);
+    try {
+      setLoading(true);
 
-    toast.success("Room deleted successfully");
+      await deleteRoom(roomId);
 
-    router.push("/dashboard");
-  } catch (error: any) {
-    toast.error(error.message || "Failed to delete room");
-  } finally {
-    setLoading(false);
-  }
-};
+      toast.success("Room deleted successfully");
+
+      router.push("/dashboard");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete room");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -141,6 +146,13 @@ const handleDeleteRoom = async () => {
                         🎨 {roomName || "Loading..."}
                       </p>
                     </div>
+                       <button
+                      onClick={handleCopyRoomId}
+                    className="flex w-full items-center cursor-pointer gap-3 rounded-xl px-4 py-3 text-sm font-medium text-foreground transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Share Room
+                    </button>
                     {
                       isOwner && (
                         <button
@@ -165,6 +177,8 @@ const handleDeleteRoom = async () => {
                       <LogOut className="h-4 w-4" />
                       {loading ? "Please Wait..." : "Leave Room"}
                     </button>
+
+                 
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -221,7 +235,13 @@ const handleDeleteRoom = async () => {
                   <span className="text-sm font-medium text-foreground">Theme</span>
                   <ToggleTheme />
                 </div>
-
+ <button
+                  onClick={handleCopyRoomId}
+                  className="flex w-full items-center cursor-pointer gap-3 rounded-xl px-4 py-3 text-sm font-medium text-foreground transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+                  >
+                  <Copy className="h-4 w-4" />
+                  Share Room
+                </button>
                 {isOwner && (
                   <button
                     onClick={() => {
@@ -244,6 +264,8 @@ const handleDeleteRoom = async () => {
                   <LogOut className="h-5 w-5" />
                   {loading ? "Please Wait..." : "Leave Room"}
                 </button>
+
+               
               </div>
             </motion.div>
           </>
