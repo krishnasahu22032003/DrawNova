@@ -11,7 +11,7 @@ export default async function JoinRoom(roomId: string): Promise<JoinRoomResponse
 
     try {
 
-        const res = await AxiosInstance.post<JoinRoomResponse>("/api/v1/room/join", roomId);
+        const res = await AxiosInstance.post<JoinRoomResponse>(`/api/v1/room/${roomId}/join`);
 
         return res.data;
 
