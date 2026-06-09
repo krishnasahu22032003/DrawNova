@@ -24,48 +24,79 @@ function debouncedBoardSave(boardId: string, elements: any[]) {
     );
 }
 
-export async function handleDrawShape(ws: WebSocket, payload: any) {
+// Helper to send error back to the sender
+function sendError(ws: WebSocket, message: string) {
+    ws.send(JSON.stringify({ type: "ERROR", message }));
+}
+
+export function handleDrawShape(ws: WebSocket, payload: any) {
     const { roomId, boardId, shape, elements } = payload;
 
-    roomManager.broadcast(roomId, { type: "DRAW", payLoad: { shape } }, ws);
+    if (!roomId || !boardId || !shape) {
+        sendError(ws, "DRAW requires roomId, boardId, and shape");
+        return;
+    }
 
-    if (elements) {
-        debouncedBoardSave(boardId, elements); 
+    // Broadcast only the new shape to peers
+    roomManager.broadcast(roomId, {
+        type: "DRAW",
+        payLoad: { shape },
+    }, ws);
+
+    // Save full elements array if client sent it
+    if (Array.isArray(elements)) {
+        debouncedBoardSave(boardId, elements);
     }
 }
 
 export function handleUpdateShape(ws: WebSocket, payload: any) {
-    const { roomId, boardId } = payload;
+    const { roomId, boardId, elements } = payload;
 
-    roomManager.broadcast(
-        roomId,
-        { type: "UPDATE_SHAPE", payLoad: payload },
-        ws
-    );
+    if (!roomId || !boardId) {
+        sendError(ws, "UPDATE_SHAPE requires roomId and boardId");
+        return;
+    }
 
-    debouncedBoardSave(boardId, payload.elements);
+    roomManager.broadcast(roomId, {
+        type: "UPDATE_SHAPE",
+        payLoad: payload,
+    }, ws);
+
+    if (Array.isArray(elements)) {
+        debouncedBoardSave(boardId, elements);
+    }
 }
 
 export function handleDeleteShape(ws: WebSocket, payload: any) {
-    const { roomId, boardId } = payload;
+    const { roomId, boardId, elements } = payload;
 
-    roomManager.broadcast(
-        roomId,
-        { type: "DELETE_SHAPE", payLoad: payload },
-        ws
-    );
+    if (!roomId || !boardId) {
+        sendError(ws, "DELETE_SHAPE requires roomId and boardId");
+        return;
+    }
 
-    debouncedBoardSave(boardId, payload.elements);
+    roomManager.broadcast(roomId, {
+        type: "DELETE_SHAPE",
+        payLoad: payload,
+    }, ws);
+
+    if (Array.isArray(elements)) {
+        debouncedBoardSave(boardId, elements);
+    }
 }
 
 export function handleClearBoard(ws: WebSocket, payload: any) {
     const { roomId, boardId } = payload;
 
-    roomManager.broadcast(
-        roomId,
-        { type: "CLEAR_BOARD", payLoad: payload },
-        ws
-    );
+    if (!roomId || !boardId) {
+        sendError(ws, "CLEAR_BOARD requires roomId and boardId");
+        return;
+    }
+
+    roomManager.broadcast(roomId, {
+        type: "CLEAR_BOARD",
+        payLoad: payload,
+    }, ws);
 
     debouncedBoardSave(boardId, []);
 }
