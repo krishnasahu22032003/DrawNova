@@ -12,10 +12,30 @@ const Port = ENV.PORT;
 const server = createServer();
 const wss = new WebSocketServer({ server });
 
+function getCookie(name: string, cookieHeader?: string) {
+  if (!cookieHeader) return null;
+
+  const cookies = cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const [key, value] = cookie.trim().split("=");
+
+    if (key === name) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
 wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     const url = new URL(req.url!, `http://localhost`);
-    const token = url.searchParams.get("token");
-
+    console.log("COOKIE HEADER:", req.headers.cookie);
+   const token = getCookie(
+  "user_token",
+  req.headers.cookie
+);
+console.log("TOKEN:", token);
     if (!token) {
         ws.close(1008, "No token");
         return;
@@ -67,7 +87,7 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
 
     ws.on("close", () => {
         removeSocket(ws);
-        console.log("Client Disconnected");
+        console.log("Client Disconnected" , ws);
     });
 });
 

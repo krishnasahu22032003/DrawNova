@@ -57,7 +57,7 @@ export async function isRoomOwner(roomId: string): Promise<boolean> {
 
 export async function deleteRoom(roomId: string): Promise<void> {
   try {
-    await AxiosInstance.delete(`/api/v1/room/${roomId}`);
+    await AxiosInstance.delete(`/api/v1/room/delete/${roomId}`);
   } catch (error: any) {
     throw new Error(
       error.response?.data?.message || "Failed to delete room"
