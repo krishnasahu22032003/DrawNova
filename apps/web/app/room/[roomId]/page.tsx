@@ -33,7 +33,7 @@ export default function RoomPage() {
           <RoomHeader roomId={roomId}/>
             <ToolBar selectedTool={selectedTool} setSelectedTool={setSelectedTool} />
 
-            <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-background/80 backdrop-blur text-xs text-muted-foreground">
+            <div className="fixed top-5 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-background/80 backdrop-blur text-xs text-muted-foreground">
                 <Users size={13} />
                 <span>{syncState.memberCount} online</span>
             </div>

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchBoardById } from "../lib/boardApi";
 import { Shape } from "../types/Shape";
 import ENV_SECRETS from "../lib/ENV";
 
@@ -38,13 +37,14 @@ export function useRoomSync(roomId: string) {
                     .find((r) => r.startsWith("token="))
                     ?.split("=")[1];
 
-                const ws = new WebSocket(
-                    `${ENV_SECRETS.WS_URL}/ws?token=${token}`
-                );
+                const ws = new WebSocket(`${ENV_SECRETS.WS_URL}?token=${token}`);
                 wsRef.current = ws;
 
                 ws.onopen = () => {
-                    ws.send(JSON.stringify({ type: "join", roomId, payload: {} }));
+                    ws.send(JSON.stringify({
+                        type: "JOIN_ROOM",
+                        payLoad: { roomId },
+                    }));
                 };
 
                 ws.onmessage = async (event) => {
@@ -131,15 +131,15 @@ export function useRoomSync(roomId: string) {
 
                 if (boardLoadedRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
                     setSyncState((s) => ({ ...s, status: "saving" }));
-                 wsRef.current.send(JSON.stringify({
-    type: "DRAW",
-    payLoad: {
-        roomId,
-        boardId: boardIdRef.current,
-        shape: next[next.length - 1],
-        elements: next,
-    },
-}));
+                    wsRef.current.send(JSON.stringify({
+                        type: "DRAW",
+                        payLoad: {
+                            roomId,
+                            boardId: boardIdRef.current,
+                            shape: next[next.length - 1],
+                            elements: next,
+                        },
+                    }));
 
                     setTimeout(() => {
                         setSyncState((s) =>
@@ -164,9 +164,10 @@ export function useRoomSync(roomId: string) {
     const sendCursor = useCallback(
         (x: number, y: number) => {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
-                wsRef.current.send(
-                    JSON.stringify({ type: "cursor_move", roomId, payload: { x, y } })
-                );
+                wsRef.current.send(JSON.stringify({
+                    type: "CURSOR_MOVE",
+                    payLoad: { roomId, x, y },
+                }));
             }
         },
         [roomId]
