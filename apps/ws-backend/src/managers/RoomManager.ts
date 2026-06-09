@@ -124,4 +124,8 @@ getRoomSize(roomId: string): number {
     return this.rooms.get(roomId)?.size ?? 0;
 }
 
+getSocketRooms(ws: Websocket): Set<string> | undefined {
+    return this.socketRoom.get(ws);
+}
+
 }
