@@ -4,7 +4,6 @@ import "./globals.css";
 import { ThemeProvider } from "../components/Providers/theme-provider";
 import Footer from "../components/Footer";
 import { Toaster } from "sonner";
-import { WSProvider } from "../contexts/WSContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,11 +38,9 @@ export default function RootLayout({
           ${sora.variable}
           ${spaceGrotesk.variable}`}>
         <ThemeProvider>
-          <WSProvider>
           {children}
           <Toaster richColors position="top-center"/>
           <Footer />
-          </WSProvider>
         </ThemeProvider>
 
       </body>

@@ -38,7 +38,6 @@ export default function DashboardHeader() {
   const router = useRouter();
 const [joinroom, setJoinroom] =
   useState(false);
-  const { ws, isConnected } = useWS();
 const [createLoading, setCreateLoading] = useState(false);
 
 async function handleCreateRoom(name: string, maxUsers: number) {
@@ -46,14 +45,6 @@ async function handleCreateRoom(name: string, maxUsers: number) {
     try {
         const res = await createRoom({ name, maxUsers });
         const roomId = res.data.room.id;
-
-        // Join the room over WS
-        if (ws && isConnected) {
-            ws.send(JSON.stringify({
-                type: "JOIN_ROOM",
-                payLoad: { roomId },
-            }));
-        }
 
         toast.success("Room created!");
         setCreateRoomOpen(false);
