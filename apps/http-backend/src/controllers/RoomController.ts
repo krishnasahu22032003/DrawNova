@@ -169,7 +169,19 @@ export async function LeaveRoom(req: Request, res: Response) {
   };
 
   const { roomId } = parsed.data;
-  try {
+ try {
+
+    const room = await prisma.room.findUnique({
+        where: { id: roomId }
+    });
+
+    if (room?.ownerId === userId) {
+        return res.status(400).json({
+            success: false,
+            message: "Owner cannot leave their own room. Delete it instead."
+        });
+    }
+
     const member = await prisma.roomMembers.findUnique({
       where: {
         roomId_userId: {
@@ -356,9 +368,7 @@ export async function joinRoom(req: Request, res: Response) {
     }
 
     const membersCount = await prisma.roomMembers.count({
-      where: {
-        roomId
-      }
+      where: { roomId }
     });
 
     if (membersCount >= room.maxUsers) {
@@ -368,12 +378,20 @@ export async function joinRoom(req: Request, res: Response) {
       });
     }
 
-    await prisma.roomMembers.create({
-      data: {
-        roomId,
-        userId
+    try {
+      await prisma.roomMembers.create({
+        data: { roomId, userId }
+      });
+    } catch (err: any) {
+
+      if (err.code === "P2002") {
+        return res.status(400).json({
+          success: false,
+          message: "Already joined this room"
+        });
       }
-    });
+      throw err;
+    }
 
     return res.status(200).json({
       success: true,
