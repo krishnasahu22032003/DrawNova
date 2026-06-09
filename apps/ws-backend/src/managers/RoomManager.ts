@@ -128,4 +128,18 @@ getSocketRooms(ws: Websocket): Set<string> | undefined {
     return this.socketRoom.get(ws);
 }
 
+getUniqueUserCount(roomId: string): number {
+    const room = this.rooms.get(roomId);
+
+    if (!room) return 0;
+
+    const users = new Set<string>();
+
+    for (const ws of room) {
+        users.add((ws as any).userId);
+    }
+
+    return users.size;
+}
+
 }

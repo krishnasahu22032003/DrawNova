@@ -12,7 +12,7 @@ export default function removeSocket(ws: WebSocket) {
                 type: "MEMBER_LEFT",
                 payLoad: {
                     userId: (ws as any).userId,
-                    memberCount: roomManager.getRoomSize(roomId) - 1,
+                    memberCount: roomManager.getUniqueUserCount(roomId) - 1,
                 },
             });
         }

@@ -31,7 +31,7 @@ export async function handleJoinRoom(ws: WebSocket, payload: any) {
             boardId: board?.id,
             elements: board?.elements ?? [],
             appState: board?.appState,
-            memberCount: roomManager.getRoomSize(roomId),
+            memberCount: roomManager.getUniqueUserCount(roomId),
         },
     }));
 
@@ -39,7 +39,7 @@ export async function handleJoinRoom(ws: WebSocket, payload: any) {
         type: "MEMBER_JOINED",
         payLoad: {
             userId,
-            memberCount: roomManager.getRoomSize(roomId),
+            memberCount: roomManager.getUniqueUserCount(roomId),
         },
     }, ws);
 }
@@ -54,7 +54,7 @@ export function handleLeaveRoom(ws: WebSocket, payload: any) {
         type: "MEMBER_LEFT",
         payLoad: {
             userId,
-            memberCount: roomManager.getRoomSize(roomId), 
+            memberCount: roomManager.getUniqueUserCount(roomId), 
         },
     });
 }
