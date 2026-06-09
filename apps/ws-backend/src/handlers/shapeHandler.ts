@@ -24,16 +24,14 @@ function debouncedBoardSave(boardId: string, elements: any[]) {
     );
 }
 
-export function handleDrawShape(ws: WebSocket, payload: any) {
-    const { roomId, boardId, shape } = payload;
+export async function handleDrawShape(ws: WebSocket, payload: any) {
+    const { roomId, boardId, shape, elements } = payload;
 
-    roomManager.broadcast(
-        roomId,
-        { type: "DRAW", payLoad: { shape } },
-        ws
-    );
+    roomManager.broadcast(roomId, { type: "DRAW", payLoad: { shape } }, ws);
 
-    debouncedBoardSave(boardId, payload.elements);
+    if (elements) {
+        debouncedBoardSave(boardId, elements); 
+    }
 }
 
 export function handleUpdateShape(ws: WebSocket, payload: any) {

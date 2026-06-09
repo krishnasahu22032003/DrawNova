@@ -50,11 +50,11 @@ export function handleLeaveRoom(ws: WebSocket, payload: any) {
 
     roomManager.leaveRoom(roomId, ws);
 
-    roomManager.broadcast(roomId, {
-        type: "MEMBER_LEFT",
-        payLoad: {
-            userId,
-            memberCount: roomManager.getRoomSize(roomId),
-        },
-    });
+  roomManager.broadcast(roomId, {
+    type: "MEMBER_LEFT",
+    payLoad: {
+        userId: (ws as any).userId,
+        memberCount: room.size, // already shrunk
+    },
+});
 }
