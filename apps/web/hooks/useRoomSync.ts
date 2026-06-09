@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Shape } from "../types/Shape";
-import ENV_SECRETS from "../lib/ENV";
 import { useWS } from "../contexts/WSContext";
 
 interface SyncState {
@@ -39,18 +38,12 @@ useEffect(() => {
       if (joinedRoomRef.current) return;
 
   joinedRoomRef.current = true;
-    
-    ws.send(
-        JSON.stringify({
-            type: "JOIN_ROOM",
-            payLoad: { roomId },
-        })
-    );
 
-    const handleMessage = (event: MessageEvent) => {
+     const handleMessage = (event: MessageEvent) => {
         const msg = JSON.parse(event.data);
 
         if (msg.type === "JOINED") {
+            console.log("JOINED RECEIVED");
             boardIdRef.current = msg.payLoad.boardId;
 
             setShapes(msg.payLoad.elements || []);
@@ -110,6 +103,15 @@ useEffect(() => {
     };
 
     ws.addEventListener("message", handleMessage);
+    
+    ws.send(
+        JSON.stringify({
+            type: "JOIN_ROOM",
+            payLoad: { roomId },
+        })
+    );
+
+ 
 
 return () => {
     joinedRoomRef.current = false;
@@ -136,9 +138,15 @@ return () => {
             setShapes((prev) => {
                 const next = typeof updater === "function" ? updater(prev) : updater;
 
+                console.log("updateShapes called");
+console.log("ws state", ws?.readyState);
+console.log("boardLoaded", boardLoadedRef.current);
+
                if (boardLoadedRef.current && ws?.readyState === WebSocket.OPEN){
                     setSyncState((s) => ({ ...s, status: "saving" }));
+                      console.log("Sending DRAW");
                     ws.send(JSON.stringify({
+                      
                         type: "DRAW",
                         payLoad: {
                             roomId,
@@ -165,19 +173,21 @@ return () => {
                 return next;
             });
         },
-        [roomId]
+        [roomId , ws]
     );
 
     const sendCursor = useCallback(
         (x: number, y: number) => {
          if (ws?.readyState === WebSocket.OPEN) {
+            console.log("Sending cursor", x, y);
+console.log("WS State", ws?.readyState);
                 ws.send(JSON.stringify({
                     type: "CURSOR_MOVE",
                     payLoad: { roomId, x, y },
                 }));
             }
         },
-        [roomId]
+        [roomId , ws]
     );
 
     return {

@@ -40,6 +40,7 @@ export default function JoinRoomModal({
 
     const res = await JoinRoom(cleanedRoomId) ;
     toast.success(res.message || "Joined Room Successfully");
+    onClose() ;
     router.push(`/room/${cleanedRoomId}`)
 
  }catch(error :any ){

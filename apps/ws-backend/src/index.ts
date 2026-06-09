@@ -87,7 +87,7 @@ console.log("TOKEN:", token);
 
     ws.on("close", () => {
         removeSocket(ws);
-        console.log("Client Disconnected" , ws);
+        console.log("Client Disconnected" );
     });
 });
 

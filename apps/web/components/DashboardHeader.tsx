@@ -20,7 +20,6 @@ import UserSignOut from "../lib/signout";
 import { toast } from "sonner";
 import GetUserDetails from "../lib/getUserdetails";
 import JoinRoomModal from "./modals/JoinRoomModal";
-import { useWS } from "../contexts/WSContext";
 import createRoom from "../lib/createRoom";  
 
 
