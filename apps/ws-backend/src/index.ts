@@ -34,7 +34,7 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     ws.on("message", (message: Buffer) => {
         try {
             const data = JSON.parse(message.toString());
-
+            console.log("Received message:", data.type, data.payLoad);
             switch (data.type) {
                 case "JOIN_ROOM":
                     handleJoinRoom(ws, data.payLoad);

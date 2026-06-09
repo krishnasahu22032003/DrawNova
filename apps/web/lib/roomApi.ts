@@ -39,4 +39,5 @@ export async function leaveRoom(roomId: string): Promise<void> {
     } catch (error: any) {
         throw new Error(error.response?.data?.message || "Failed to leave room");
     }
-}
+};
+

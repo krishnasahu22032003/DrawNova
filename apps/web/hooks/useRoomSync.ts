@@ -34,7 +34,7 @@ export function useRoomSync(roomId: string) {
             try {
                 const token = document.cookie
                     .split("; ")
-                    .find((r) => r.startsWith("token="))
+                    .find((r) => r.startsWith("user_"))
                     ?.split("=")[1];
 
                 const ws = new WebSocket(`${ENV_SECRETS.WS_URL}?token=${token}`);

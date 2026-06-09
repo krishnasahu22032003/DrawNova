@@ -485,3 +485,53 @@ export async function getUserRooms(req: Request, res: Response) {
   }
 };
 
+export async function IsRoomOwner(req: Request, res: Response) {
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid User"
+    });
+  }
+
+  const parsed = roomSchema.safeParse(req.params);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid Input",
+      error: parsed.error.flatten()
+    });
+  }
+
+  const { roomId } = parsed.data;
+
+  try {
+    const room = await prisma.room.findUnique({
+      where: {
+        id: roomId
+      },
+      select: {
+        ownerId: true
+      }
+    });
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      isOwner: room.ownerId === req.userId
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+}
