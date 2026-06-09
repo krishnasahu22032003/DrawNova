@@ -65,8 +65,11 @@ export async function CreateRoom(req: Request, res: Response) {
         return {
           room,
           board
-        }
-      }
+        } 
+      },
+      { timeout: 30000,  
+         maxWait: 10000,
+          }
     );
     return res.status(201).json({
       success: true,

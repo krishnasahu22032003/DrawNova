@@ -22,7 +22,7 @@ export default async function GetUserDetails(): Promise<GetUserDetailsResponse> 
 
         return res.data;
     } catch (error: any) {
-        throw new Error(error.Response.data.message || "Something went wrong")
+        throw new Error(error.response.data.message || "Something went wrong")
     };
 
 };
