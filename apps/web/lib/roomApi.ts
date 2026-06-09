@@ -53,4 +53,14 @@ export async function isRoomOwner(roomId: string): Promise<boolean> {
       error.response?.data?.message || "Failed to check room ownership"
     );
   }
+};
+
+export async function deleteRoom(roomId: string): Promise<void> {
+  try {
+    await AxiosInstance.delete(`/api/v1/room/${roomId}`);
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Failed to delete room"
+    );
+  }
 }
