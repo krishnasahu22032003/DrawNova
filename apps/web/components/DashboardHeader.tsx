@@ -20,6 +20,9 @@ import UserSignOut from "../lib/signout";
 import { toast } from "sonner";
 import GetUserDetails from "../lib/getUserdetails";
 import JoinRoomModal from "./modals/JoinRoomModal";
+import { useWS } from "../context/WSContext";
+import createRoom from "../lib/createRoom";  
+
 
 export default function DashboardHeader() {
   const [open, setOpen] = useState(false);
@@ -35,6 +38,32 @@ export default function DashboardHeader() {
   const router = useRouter();
 const [joinroom, setJoinroom] =
   useState(false);
+  const { ws, isConnected } = useWS();
+const [createLoading, setCreateLoading] = useState(false);
+
+async function handleCreateRoom(name: string, maxUsers: number) {
+    setCreateLoading(true);
+    try {
+        const res = await createRoom({ name, maxUsers });
+        const roomId = res.data.room.id;
+
+        // Join the room over WS
+        if (ws && isConnected) {
+            ws.send(JSON.stringify({
+                type: "JOIN_ROOM",
+                payLoad: { roomId },
+            }));
+        }
+
+        toast.success("Room created!");
+        setCreateRoomOpen(false);
+        router.push(`/room/${roomId}`);
+    } catch (error: any) {
+        toast.error(error.message || "Failed to create room");
+    } finally {
+        setCreateLoading(false);
+    }
+}
 
   useEffect(() => {
     const handleOutsideClick = (
@@ -708,7 +737,7 @@ const [joinroom, setJoinroom] =
         )}
       </AnimatePresence>
       <UpdateProfileModal open={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
-      <CreateRoomModal open={createRoomOpen} onClose={() => setCreateRoomOpen(false)} />
+      <CreateRoomModal open={createRoomOpen} onClose={() => setCreateRoomOpen(false)} onSubmit={handleCreateRoom} loading={createLoading} />
         <JoinRoomModal open={joinroom} onClose={()=>setJoinroom(false)}/>
     </>
   );
