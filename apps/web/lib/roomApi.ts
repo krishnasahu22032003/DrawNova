@@ -41,3 +41,16 @@ export async function leaveRoom(roomId: string): Promise<void> {
     }
 };
 
+export async function isRoomOwner(roomId: string): Promise<boolean> {
+  try {
+    const response = await AxiosInstance.get(
+      `/api/v1/room/${roomId}/is-owner`
+    );
+
+    return response.data.isOwner;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "Failed to check room ownership"
+    );
+  }
+}
