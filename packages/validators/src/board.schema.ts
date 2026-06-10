@@ -75,6 +75,10 @@ export const UpdateBoardSchema = z.object({
   appState: AppStateSchema,
 });
 
+export const boardSchema = z.object({
+  boardId: z.string()
+});
+
 export type Element = z.infer<typeof ElementSchema>;
 export type AppState = z.infer<typeof AppStateSchema>;
 export type UpdateBoardInput = z.infer<typeof UpdateBoardSchema>;

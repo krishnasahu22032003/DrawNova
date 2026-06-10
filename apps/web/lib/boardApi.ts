@@ -100,8 +100,14 @@ export async function fetchUserRooms() {
 };
 
 export async function clearBoardById(boardId: string): Promise<void> {
+    console.log("clearBoardById url:", api.defaults.baseURL + `/api/v1/board/update/${boardId}`);
     await api.patch(`/api/v1/board/update/${boardId}`, {
         elements: [],
-        appState: { zoom: 1, scrollX: 0, scrollY: 0, theme: "dark" },
+        appState: {
+            zoom: 1,
+            scrollX: 0,
+            scrollY: 0,
+            theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
+        },
     });
 }

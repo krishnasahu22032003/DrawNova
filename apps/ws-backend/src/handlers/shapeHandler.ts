@@ -97,7 +97,7 @@ export function handleClearBoard(ws: WebSocket, payload: any) {
     roomManager.broadcast(roomId, {
         type: "CLEAR_BOARD",
         payLoad: payload,
-    }, ws);
+    }); 
 
     debouncedBoardSave(boardId, []);
 }

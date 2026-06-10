@@ -251,8 +251,10 @@ export function useRoomSync(roomId: string) {
         [roomId, ws]
     );
 
-    const resetBoard = useCallback(async () => {
+const resetBoard = useCallback(async () => {
     if (!boardIdRef.current) return;
+
+    setShapes([]);  // clear immediately for the sender
 
     await clearBoardById(boardIdRef.current);
 

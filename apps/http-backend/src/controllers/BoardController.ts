@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/db/client";
-import { roomSchema, UpdateBoardSchema } from "@repo/validators/Zod";
+import { boardSchema, roomSchema, UpdateBoardSchema } from "@repo/validators/Zod";
 
 export async function GetUserBoard(
   req: Request,
@@ -301,7 +301,7 @@ export async function updateBoardById(req: Request, res: Response) {
 
   const userId = req.userId;
 
-  const parsedParams = roomSchema.safeParse(req.params);
+  const parsedParams = boardSchema.safeParse(req.params);
 
   if (!parsedParams.success) {
     return res.status(400).json({
@@ -321,7 +321,7 @@ export async function updateBoardById(req: Request, res: Response) {
     });
   }
 
-  const { roomId: boardId } = parsedParams.data;
+  const { boardId } = parsedParams.data;
 
   const { elements, appState } = parsedBody.data;
 
