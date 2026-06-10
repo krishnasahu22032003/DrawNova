@@ -100,9 +100,8 @@ export async function fetchUserRooms() {
 };
 
 export async function clearBoardById(boardId: string): Promise<void> {
-    await axios.patch(
-        `/api/v1/board/update/${boardId}`,
-        { elements: [], appState: { zoom: 1, scrollX: 0, scrollY: 0, theme: "dark" } },
-        { withCredentials: true }
-    );
+    await api.patch(`/api/v1/board/update/${boardId}`, {
+        elements: [],
+        appState: { zoom: 1, scrollX: 0, scrollY: 0, theme: "dark" },
+    });
 }

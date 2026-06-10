@@ -28,7 +28,8 @@ export default function RoomPage() {
         cursors,
         sendCursor,
         updateShape,
-        deleteShape
+        deleteShape,
+        resetBoard
     } = useRoomSync(roomId);
 
     return (
@@ -52,12 +53,12 @@ export default function RoomPage() {
                     setZoom={setZoom}
                     offset={offset}
                     setOffset={setOffset}
-                    resetBoard={async () => { }}
                     cursors={cursors}
                     sendCursor={sendCursor}
                      addShape={addShape}
                     updateShape={updateShape}
                     deleteShape={deleteShape}
+                    resetBoard={resetBoard}
                 />
             )}
         </div>

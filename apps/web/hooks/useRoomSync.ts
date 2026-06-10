@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Shape } from "../types/Shape";
 import { useWS } from "../contexts/WSContext";
+import { clearBoardById } from "../lib/boardApi";
 
 interface SyncState {
     status: "loading" | "saving" | "saved" | "error" | "idle";
@@ -250,6 +251,23 @@ export function useRoomSync(roomId: string) {
         [roomId, ws]
     );
 
+    const resetBoard = useCallback(async () => {
+    if (!boardIdRef.current) return;
+
+    await clearBoardById(boardIdRef.current);
+
+    if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(
+            JSON.stringify({
+                type: "CLEAR_BOARD",
+                payLoad: {
+                    roomId,
+                    boardId: boardIdRef.current,
+                },
+            })
+        );
+    }
+}, [roomId, ws]);
 
     return {
         shapes,
@@ -263,6 +281,7 @@ export function useRoomSync(roomId: string) {
         cursors,
         sendCursor,
         updateShape,
-        deleteShape
+        deleteShape,
+        resetBoard
     };
 }
