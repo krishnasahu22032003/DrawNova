@@ -14,33 +14,39 @@ export function WSProvider({ children }: { children: React.ReactNode }) {
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
-    useEffect(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) return;
+useEffect(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN ||
+        wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
-        const socket = new WebSocket(ENV_SECRETS.WS_URL!);
-        wsRef.current = socket;
+    const socket = new WebSocket(ENV_SECRETS.WS_URL!);
+    wsRef.current = socket;
 
-        socket.onopen = () => {
-            console.log("WS connected");
-            setWs(socket);
-            setIsConnected(true);
-        };
+    socket.onopen = () => {
+        console.log("WS connected");
+        setWs(socket);
+        setIsConnected(true);
+    };
 
-        socket.onclose = (event) => {
-            console.log("WS closed", event.code, event.reason);
-            setIsConnected(false);
-            setWs(null);
-            wsRef.current = null;
-        };
+    socket.onclose = (event) => {
+        console.log("WS closed", event.code, event.reason);
+        setIsConnected(false);
+        setWs(null);
+        wsRef.current = null;
+    };
 
-        socket.onerror = (err) => {
-            console.error("WS error", err);
-        };
+    socket.onerror = (err) => {
+        if (socket.readyState === WebSocket.CLOSING ||
+            socket.readyState === WebSocket.CLOSED) return;
+        console.error("WS error", err);
+    };
 
-        return () => {
-            socket.close();
-        };
-    }, []);
+    return () => {
+        socket.onopen = null;
+        socket.onclose = null;
+        socket.onerror = null;
+        socket.close();
+    };
+}, []);
 
     return (
         <WSContext.Provider value={{ ws, isConnected }}>

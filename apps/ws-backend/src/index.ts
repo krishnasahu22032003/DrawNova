@@ -29,7 +29,6 @@ function getCookie(name: string, cookieHeader?: string) {
 }
 
 wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
-    const url = new URL(req.url!, `http://localhost`);
     console.log("COOKIE HEADER:", req.headers.cookie);
    const token = getCookie(
   "user_token",
