@@ -1,159 +1,426 @@
-# Turborepo starter
+<div align="center">
 
-This Turborepo starter is maintained by the Turborepo core team.
+<br />
 
-## Using this example
-
-Run the following command:
-
-```sh
-npx create-turbo@latest
+```
+██████╗ ██████╗  █████╗ ██╗    ██╗███╗   ██╗ ██████╗ ██╗   ██╗ █████╗
+██╔══██╗██╔══██╗██╔══██╗██║    ██║████╗  ██║██╔═══██╗██║   ██║██╔══██╗
+██║  ██║██████╔╝███████║██║ █╗ ██║██╔██╗ ██║██║   ██║██║   ██║███████║
+██║  ██║██╔══██╗██╔══██║██║███╗██║██║╚██╗██║██║   ██║╚██╗ ██╔╝██╔══██║
+██████╔╝██║  ██║██║  ██║╚███╔███╔╝██║ ╚████║╚██████╔╝ ╚████╔╝ ██║  ██║
+╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═══╝ ╚═════╝   ╚═══╝  ╚═╝  ╚═╝
 ```
 
-## What's inside?
+<br />
 
-This Turborepo includes the following packages/apps:
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)
+![Turborepo](https://img.shields.io/badge/Turborepo-monorepo-EF4444?style=flat-square&logo=turborepo)
 
-### Apps and Packages
+<br />
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+</div>
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+---
 
-### Utilities
+## What is DrawNova?
 
-This Turborepo has some additional tools already setup for you:
+DrawNova is a full-stack, real-time collaborative whiteboard application built as a Turborepo monorepo. It lets multiple users join a shared room and draw simultaneously — every shape, cursor movement, and board action syncs instantly across all connected clients via WebSockets, with full persistence backed by Prisma and PostgreSQL.
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+Beyond rooms, every user also has a personal private board — a persistent canvas that auto-saves to the database with a debounced 2-second write, and falls back gracefully to a localStorage draft when the user is offline or the server is unreachable.
 
-### Build
+The project is architected with a strict separation of concerns across three independent apps inside the monorepo: a **Next.js 15 frontend** using the App Router, a **dedicated Express HTTP API** for auth, rooms, and board management, and a **standalone WebSocket server** for all real-time collaboration. These apps share common packages for the Prisma client, Zod validation schemas, TypeScript types, and environment config — all orchestrated by Turborepo for fast, parallel builds and dependency-aware task pipelines.
 
-To build all apps and packages, run the following command:
+---
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Screenshots
 
-```sh
-cd my-turborepo
-turbo build
+> Add your screenshots to a `screenshots/` folder at the monorepo root and they will render here automatically.
+
+### Dashboard
+
+![Dashboard](./screenshots/dashboard.png)
+
+> The main landing page after login. Lists all rooms you own or are a member of, provides access to your personal board, and exposes the Create Room modal.
+
+---
+
+### Collaborative Room
+
+![Room](./screenshots/room.png)
+
+> The live drawing room. Shows real-time cursors from all connected members, the member count badge, the sync status indicator, and the full canvas toolbar.
+
+---
+
+### Personal Board
+
+![Personal Board](./screenshots/personal-board.png)
+
+> Your private canvas. Auto-saves every 2 seconds after the last change, shows a five-state sync badge (loading → saving → saved → error → idle), and recovers from a localStorage draft if the DB save fails.
+
+---
+
+## Features
+
+**Real-time collaboration**
+Every shape drawn, updated, or deleted is broadcast to all clients in the room via WebSockets in under a frame. Cursor positions are tracked and rendered live for every connected member.
+
+**Persistent boards**
+Board state is saved to PostgreSQL via Prisma. On the WebSocket server, all shape mutations are debounced at 2 seconds to prevent write storms during fast drawing sessions. On the personal board, the frontend hook debounces its own save independently.
+
+**Room system**
+Users can create named rooms and share them. The RoomManager singleton on the WS server tracks which sockets are in which rooms using a two-way map, enabling O(1) broadcast and clean disconnect handling. Member join/leave events are broadcast to the room in real time.
+
+**Personal board**
+Every user gets a private persistent canvas isolated from any room. It loads from the API on mount, falls back to a localStorage draft if the API is unreachable, and pushes the draft back to the DB on the next successful connection.
+
+**Shape operations**
+The full set of collaborative operations — `DRAW`, `UPDATE_SHAPE`, `DELETE_SHAPE`, and `CLEAR_BOARD` — are all synced across the room via the WS server. The sender's local state is updated optimistically before the broadcast completes.
+
+**JWT authentication**
+JWTs are issued on login and stored as HTTP-only cookies. The WebSocket server reads the token directly from `req.headers.cookie` during the WS upgrade handshake — keeping the token out of URLs and server logs entirely.
+
+**Sync indicator**
+A `SyncBadge` component with five distinct states gives the user constant, accurate feedback on board persistence: `loading` on initial fetch, `saving` during the debounce window, `saved` on successful write, `error` on failure, and `idle` when no changes are pending.
+
+**Dark mode**
+System-aware theme support via Tailwind CSS. The theme is also stored as part of the board's `appState` in the database.
+
+---
+
+## Monorepo Structure
+
+```
+drawnova/
+├── apps/
+│   ├── web/                  # Next.js 15 frontend (App Router)
+│   │   ├── app/              # Pages, layouts, route groups
+│   │   ├── components/       # Canvas, ToolBar, SyncBadge, modals
+│   │   ├── hooks/            # useRoomSync, useBoardSync
+│   │   ├── contexts/         # WSContext — shared WS connection
+│   │   ├── lib/              # boardApi.ts (Axios), ENV config
+│   │   └── types/            # Shape, Tool types
+│   │
+│   ├── http-backend/         # Express HTTP API
+│   │   ├── controllers/      # AuthController, RoomController, BoardController
+│   │   ├── routes/           # Auth, Room, Board routers
+│   │   ├── middleware/        # JWT auth middleware
+│   │   └── schemas/          # Zod request validation schemas
+│   │
+│   └── ws-backend/           # Standalone WebSocket server
+│       ├── handlers/         # roomHandler, shapeHandler, cursorHandler, removeSocket
+│       ├── managers/         # RoomManager singleton
+│       └── utils/            # ENV loader
+│
+├── packages/
+│   ├── db/                   # Prisma client + schema (shared across apps)
+│   ├── common/               # Shared Zod schemas + TypeScript types
+│   └── typescript-config/    # Shared tsconfig base presets
+│
+├── turbo.json                # Turborepo pipeline config
+└── package.json              # Root workspace config
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15 (App Router), React 18, Tailwind CSS |
+| HTTP Backend | Express 4, Zod, JWT, bcrypt |
+| WebSocket Server | `ws`, JWT, custom RoomManager singleton |
+| Database ORM | Prisma 5 |
+| Database | PostgreSQL |
+| Monorepo Tooling | Turborepo, pnpm workspaces |
+| Language | TypeScript 5 — end-to-end |
+| Auth | JWT via HTTP-only cookie |
+| Validation | Zod (shared schemas in `packages/common`) |
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Browser (Next.js)                   │
+│                                                         │
+│   WSContext ──── shared WebSocket connection            │
+│       │                                                 │
+│       ├──► useRoomSync ──► Canvas (room page)           │
+│       │        └── addShape / updateShape / deleteShape │
+│       │        └── sendCursor / resetBoard              │
+│       │                                                 │
+│   useBoardSync ──────────► Canvas (personal board)      │
+│       └── persistShapes (debounced) / resetBoard        │
+└──────────┬──────────────────────────────┬───────────────┘
+           │ HTTP (Axios + withCredentials)│ WebSocket (cookie auth)
+           ▼                              ▼
+┌──────────────────────┐     ┌────────────────────────────┐
+│   Express Backend    │     │     WebSocket Server       │
+│   :3002              │     │     :8080                  │
+│                      │     │                            │
+│  POST /auth/login    │     │  RoomManager (singleton)   │
+│  POST /auth/signup   │     │  ├─ rooms Map              │
+│  GET  /rooms         │     │  │   roomId → Set<WS>      │
+│  POST /rooms         │     │  └─ socketRoom Map         │
+│  DELETE /rooms/:id   │     │      WS → Set<roomId>      │
+│  GET  /board         │     │                            │
+│  PATCH /board/update │     │  Handlers:                 │
+│  PATCH /board/clear  │     │  ├─ JOIN_ROOM              │
+│                      │     │  ├─ LEAVE_ROOM             │
+│  Zod validation      │     │  ├─ DRAW                   │
+│  JWT middleware       │     │  ├─ UPDATE_SHAPE          │
+│  Prisma ORM          │     │  ├─ DELETE_SHAPE           │
+└──────────┬───────────┘     │  ├─ CURSOR_MOVE            │
+           │                 │  └─ CLEAR_BOARD            │
+           │                 └──────────┬─────────────────┘
+           └──────────┬─────────────────┘
+                      ▼
+            ┌──────────────────┐
+            │    PostgreSQL    │
+            │  (via Prisma)    │
+            │                 │
+            │  User           │
+            │  Room           │
+            │  Board          │
+            │  RoomMember     │
+            └──────────────────┘
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+### WebSocket Message Flow
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
+```
+Client A (sender)         WS Server                 Client B / C
+       │                      │                           │
+       │─── JOIN_ROOM ────────►│                           │
+       │◄── JOINED ────────────│  (board elements +        │
+       │    (board state)      │   appState + memberCount) │
+       │                      │─── MEMBER_JOINED ─────────►│
+       │                      │                           │
+       │─── DRAW (shape) ─────►│                           │
+       │                      │─── DRAW (shape) ──────────►│
+       │                      │   (debounced DB save)      │
+       │                      │                           │
+       │─── UPDATE_SHAPE ─────►│                           │
+       │                      │─── UPDATE_SHAPE ──────────►│
+       │                      │                           │
+       │─── DELETE_SHAPE ─────►│                           │
+       │                      │─── DELETE_SHAPE ──────────►│
+       │                      │                           │
+       │─── CURSOR_MOVE ──────►│                           │
+       │                      │─── CURSOR_MOVE ───────────►│
+       │                      │                           │
+       │─── CLEAR_BOARD ──────►│                           │
+       │◄── CLEAR_BOARD ───────│  (broadcast to ALL        │
+       │   setShapes([])       │   including sender)       │
+       │                      │─── CLEAR_BOARD ───────────►│
+       │                      │   setShapes([])            │
+       │                      │                           │
+       │─── LEAVE_ROOM ───────►│                           │
+       │                      │─── MEMBER_LEFT ───────────►│
 ```
 
-Without global `turbo`:
+---
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL (local or hosted, e.g. Supabase, Neon, Railway)
+- pnpm — `npm install -g pnpm`
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/your-username/drawnova.git
+cd drawnova
+pnpm install
 ```
 
-### Develop
+Turborepo will hoist shared dependencies and link internal packages automatically.
 
-To develop all apps and packages, run the following command:
+### 2. Configure environment variables
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Create `.env` files in each app. All three must share the same `JWT_SECRET` and point to the same database.
 
-```sh
-cd my-turborepo
-turbo dev
+**`apps/http-backend/.env`**
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/drawnova
+JWT_SECRET=your_jwt_secret_here
+PORT=3002
 ```
 
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
+**`apps/ws-backend/.env`**
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/drawnova
+JWT_SECRET=your_jwt_secret_here
+PORT=8080
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
+**`apps/web/.env.local`**
+```env
+NEXT_PUBLIC_HTTP_URL=http://localhost:3002
+NEXT_PUBLIC_WS_URL=ws://localhost:8080
 ```
 
-Without global `turbo`:
+### 3. Set up the database
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+```bash
+cd packages/db
+pnpm prisma migrate dev --name init
+pnpm prisma generate
 ```
 
-### Remote Caching
+This creates all tables and generates the typed Prisma client that both the HTTP and WS backends import from `@repo/db/client`.
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+### 4. Run the full stack
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+From the monorepo root:
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
+```bash
+pnpm dev
 ```
 
-Without global `turbo`, use your package manager:
+Turborepo resolves the dependency graph and starts all three apps in parallel with proper ordering:
 
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
+| Service | URL |
+|---|---|
+| Web (Next.js) | http://localhost:3000 |
+| HTTP Backend (Express) | http://localhost:3002 |
+| WebSocket Server | ws://localhost:8080 |
+
+---
+
+## Key Implementation Details
+
+### RoomManager
+
+The `RoomManager` is a singleton on the WebSocket server that manages all room membership using two complementary maps:
+
+```
+rooms:      Map<roomId, Set<WebSocket>>   — room → every socket in it
+socketRoom: Map<WebSocket, Set<roomId>>   — socket → every room it joined
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+This two-way structure allows O(1) lookup in both directions. When a client disconnects (even ungracefully), `removeSocket` walks the socket's room set, broadcasts `MEMBER_LEFT` to each room, and cleans up both maps — with no dangling references.
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+### Debounced Board Persistence
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+Shape saves on the WS server are debounced per `boardId` at 2 seconds. A single `Map<boardId, timer>` tracks pending saves — every shape mutation resets the timer. This means a user drawing rapidly fires only one DB write after they pause, not one per stroke. The same pattern is used independently in `useBoardSync` on the frontend for personal board saves.
 
-```sh
-turbo link
+### Frontend Sync Hooks
+
+| Hook | Scope | Responsibility |
+|---|---|---|
+| `useRoomSync` | Room page | Manages the WS lifecycle, sends `JOIN_ROOM` / `LEAVE_ROOM`, handles all incoming message types, exposes `addShape`, `updateShape`, `deleteShape`, `sendCursor`, `resetBoard` |
+| `useBoardSync` | Personal board | Loads board from API on mount, falls back to localStorage draft, debounces DB saves, exposes `updateShapes` and `resetBoard` |
+
+### WSContext
+
+A single `WSContext` holds one shared WebSocket connection for the entire app. Both the dashboard and the room page consume the same `ws` instance via `useWS()` — preventing duplicate connections when navigating between routes. The connection is established once on mount, and `useRoomSync` attaches its message listener on top of the existing socket.
+
+### Authentication Flow
+
+1. User logs in → Express issues a JWT → stored as an **HTTP-only cookie**
+2. All Axios requests use `withCredentials: true` → cookie is sent automatically
+3. WebSocket upgrade request also carries the cookie in `req.headers.cookie` → WS server verifies the JWT before accepting the connection
+4. The verified `userId` is attached to the `ws` object as `(ws as any).userId` for use in room and shape handlers
+
+---
+
+## Database Schema (Prisma)
+
+```prisma
+model User {
+  id        String       @id @default(cuid())
+  email     String       @unique
+  password  String
+  board     Board?
+  rooms     RoomMember[]
+  ownedRooms Room[]      @relation("RoomOwner")
+}
+
+model Room {
+  id       String       @id @default(cuid())
+  name     String
+  ownerId  String
+  owner    User         @relation("RoomOwner", fields: [ownerId], references: [id])
+  board    Board?
+  members  RoomMember[]
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  userId    String?  @unique   // set for personal boards
+  roomId    String?  @unique   // set for room boards
+  elements  Json     @default("[]")
+  appState  Json?
+  updatedAt DateTime @updatedAt
+}
+
+model RoomMember {
+  userId String
+  roomId String
+  user   User   @relation(fields: [userId], references: [id])
+  room   Room   @relation(fields: [roomId], references: [id])
+
+  @@id([userId, roomId])
+}
 ```
 
-Without global `turbo`:
+---
 
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
+## Scripts
+
+All scripts run from the monorepo root and are orchestrated by Turborepo:
+
+```bash
+pnpm dev          # Start all apps in watch/dev mode (parallel)
+pnpm build        # Production build for all apps
+pnpm lint         # ESLint across all workspaces
+pnpm type-check   # tsc --noEmit across all packages
 ```
 
-## Useful Links
+Target a single app without running the others:
 
-Learn more about the power of Turborepo:
+```bash
+pnpm --filter web dev
+pnpm --filter http-backend dev
+pnpm --filter ws-backend dev
+```
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+---
+
+## Roadmap
+
+- [ ] Shape selection and multi-select
+- [ ] Undo / redo history (per-client and collaborative)
+- [ ] Image upload to canvas
+- [ ] Room invite links with share codes
+- [ ] Export board as PNG / SVG
+- [ ] Presence avatars attached to live cursors
+- [ ] Mobile touch and stylus support
+- [ ] Optimistic locking to handle concurrent shape conflicts
+
+---
+
+## License
+
+MIT — see [LICENSE](./LICENSE) for details.
+
+---
+
+<div align="center">
+
+Made with ❤️ by **Krishna Sahu**
+
+[krishna.sahu.work@gmail.com](mailto:krishna.sahu.work@gmail.com)
+
+<br />
+
+*Powered by Next.js · WebSockets · Turborepo · Prisma*
+
+</div>
